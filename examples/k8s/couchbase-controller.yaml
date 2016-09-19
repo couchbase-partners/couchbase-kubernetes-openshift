@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: couchbase-cluster
+  labels:
+    name: couchbase-cluster
+spec:
+  replicas: 3
+  selector:
+    name: couchbase-cluster
+  template:
+    metadata:
+      labels:
+        name: couchbase-cluster
+    spec:
+      containers:
+      - name: couchbase-server
+        image: couchbase:enterprise-4.5.0
+        ports:
+        - containerPort: 8091
