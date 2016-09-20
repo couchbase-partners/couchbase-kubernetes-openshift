@@ -27,7 +27,7 @@ function init() {
 }
 
 //Refresh the config
-function refresh() {
+function pull() {
   
    //If the storage path is set
    if ( typeof dir !== 'undefined') {
@@ -38,6 +38,15 @@ function refresh() {
 
 }
 
+function push() {
+
+ if ( typeof dir !== 'undefined') {
+
+      jsonfile.writeFileSync(dir + "/config.json", config);
+ }
+
+}
+
 
 //Store a new config
 app.post('/config/:id/:value', function(req, res) {
@@ -45,24 +54,10 @@ app.post('/config/:id/:value', function(req, res) {
    var id = req.params.id;
    var value = req.params.value;
 
-   //If the storage path is set
-   if ( typeof dir !== 'undefined') {
 
-	//Read the config.json
-	config = jsonfile.readFileSync(dir + "/config.json");
-
-	//Set the value
-	config[id] = value;
-
-	//Write the config.json
-	jsonfile.writeFileSync(dir + "/config.json", config);
-
-   } else {
-
-    //Use in memory storage
-    config[id] = value;
-
-   }
+   pull();
+   config[id] = value;
+   push();
 
    res.json(config);
 
@@ -74,7 +69,7 @@ app.get('/config/:id', function(req, res) {
 
    var id = req.params.id;
 
-   refresh();
+   pull();
 
    res.json(config[id]);
 
@@ -85,7 +80,7 @@ app.get('/config/', function(req, res) {
 
    var id = req.params.id;
 
-   refresh();
+   pull();
 
    res.json(config);
 
