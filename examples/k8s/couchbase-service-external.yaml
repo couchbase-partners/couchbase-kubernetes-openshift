@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: couchbase-cluster-ext
+  labels:
+    name: couchbase-cluster
+spec:
+  type: NodePort
+  ports:
+  - port: 8091
+    nodePort: 30891
+  selector:
+    name: couchbase-cluster
