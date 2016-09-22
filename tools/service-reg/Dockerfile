@@ -4,4 +4,4 @@ WORKDIR /opt/service-reg
 COPY . /opt/service-reg
 RUN npm install
 EXPOSE 3000
-CMD [ "npm", "start" ]
+CMD [ "node", "app.js" ]
