@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: service-reg
+  labels:
+    name: service-reg
+spec:
+  replicas: 2
+  selector:
+    name: service-reg
+  template:
+    metadata:
+      labels:
+        name: service-reg
+    spec:
+      containers:
+      - name: service-reg
+        image: davidmaier/service-reg:0.0.1
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
+        env:
+        - name: SERVICE_REG_STORAGE
+          value: /mnt/data
+        volumeMounts:
+        - mountPath: /mnt
+          name: nfs
+      volumes:
+      - name: nfs
+        persistentVolumeClaim:
+          claimName: nfs-share   
