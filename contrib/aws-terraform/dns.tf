@@ -1,4 +1,3 @@
-
 resource "aws_route53_record" "master1" {
   zone_id = "${var.dns_zone_id}"
   name    = "${var.dns_zone_name}"
@@ -22,4 +21,3 @@ resource "aws_route53_record" "wildcard" {
   ttl     = "60"
   records = ["${aws_instance.ose-node-infra.*.public_ip}"]
 }
-

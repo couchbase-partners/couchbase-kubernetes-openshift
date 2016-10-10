@@ -92,10 +92,6 @@ variable "dns_zone_name" {
   default = "openshift.jetstack.net"
 }
 
-variable "master_ip" {
-  default = "52.212.28.113"
-}
-
 output "node_infra_ips" {
   value = ["${aws_instance.ose-node-infra.*.public_ip}"]
 }
