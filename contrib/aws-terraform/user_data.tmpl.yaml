@@ -1,0 +1,7 @@
+#cloud-config
+
+write_files:
+- path: /etc/sudoers.d/99-${ssh_user}-cloud-init-requiretty
+  permissions: 440
+  content: |
+    Defaults:${ssh_user} !requiretty
