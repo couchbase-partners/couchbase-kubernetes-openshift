@@ -1,0 +1,150 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: couchbase-single-node-persistent
+  annotations:
+    description: >-
+      Couchbase database service, with persistent storage.  Scaling to more than
+      one replica is not supported.  You must have persistent volumes available
+      in your cluster to use this template.
+    iconClass: icon-couchbase
+    tags: 'database,couchbase'
+objects:
+  - kind: Service
+    apiVersion: v1
+    metadata:
+      name: '${DATABASE_SERVICE_NAME}'
+    spec:
+      ports:
+        - name: couchbase
+          port: 8901
+      selector:
+        name: '${DATABASE_SERVICE_NAME}'
+  - kind: Service
+    apiVersion: v1
+    metadata:
+      name: '${DATABASE_SERVICE_NAME}-cluster'
+    spec:
+      clusterIP: null
+      ports:
+        - name: couchbase
+          port: 8901
+      selector:
+        name: '${DATABASE_SERVICE_NAME}'
+  - kind: PersistentVolumeClaim
+    apiVersion: v1
+    metadata:
+      name: '${DATABASE_SERVICE_NAME}'
+      annotations:
+        volume.alpha.kubernetes.io/storage-class: '${STORAGE_CLASS}'
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: '${VOLUME_CAPACITY}'
+  - apiVersion: v1
+    kind: DeploymentConfig
+    metadata:
+      name: ${DATABASE_SERVICE_NAME}
+    spec:
+      replicas: 1
+      selector:
+        name: ${DATABASE_SERVICE_NAME}
+      strategy:
+        type: Recreate
+      template:
+        metadata:
+          labels:
+            name: ${DATABASE_SERVICE_NAME}
+        spec:
+          containers:
+          - env:
+            - name: COUCHBASE_USER
+              value: ${COUCHBASE_USER}
+            - name: COUCHBASE_PASSWORD
+              value: ${COUCHBASE_PASSWORD}
+            - name: COUCHBASE_DATABASE
+              value: ${COUCHBASE_DATABASE}
+            image: ' '
+            imagePullPolicy: IfNotPresent
+            readinessProbe:
+              initialDelaySeconds: 30
+              tcpSocket:
+                port: 8901
+              timeoutSeconds: 1
+            livenessProbe:
+              initialDelaySeconds: 30
+              tcpSocket:
+                port: 8901
+              timeoutSeconds: 1
+            name: couchbase
+            ports:
+            - containerPort: 8901
+              name: couchbase
+            resources:
+              limits:
+                memory: ${MEMORY_LIMIT}
+            volumeMounts:
+            - mountPath: /opt/couchbase/var
+              name: ${DATABASE_SERVICE_NAME}-data
+          volumes:
+          - name: ${DATABASE_SERVICE_NAME}-data
+            persistentVolumeClaim:
+              claimName: ${DATABASE_SERVICE_NAME}
+      triggers:
+      - imageChangeParams:
+          automatic: true
+          containerNames:
+          - couchbase
+          from:
+            kind: ImageStreamTag
+            name: couchbase:4.5.1-enterprise
+            namespace: ${NAMESPACE}
+        type: ImageChange
+      - type: ConfigChange
+parameters:
+  - name: MEMORY_LIMIT
+    displayName: Memory Limit
+    description: Maximum amount of memory the container can use.
+    value: 512Mi
+    required: true
+  - name: NAMESPACE
+    displayName: Namespace
+    description: The OpenShift Namespace where the ImageStream resides.
+    value: openshift
+  - name: DATABASE_SERVICE_NAME
+    displayName: Database Service Name
+    description: The name of the OpenShift Service exposed for the database.
+    value: couchbase
+    required: true
+  - name: COUCHBASE_USER
+    displayName: Couchbase Connection Username
+    description: Username for Couchbase user that will be used for accessing the database.
+    generate: expression
+    from: 'user[A-Z0-9]{3}'
+    required: true
+  - name: COUCHBASE_PASSWORD
+    displayName: Couchbase Connection Password
+    description: Password for the Couchbase connection user.
+    generate: expression
+    from: '[a-zA-Z0-9]{16}'
+    required: true
+  - name: COUCHBASE_DATABASE
+    displayName: Couchbase Database Name
+    description: Name of the Couchbase database accessed.
+    value: sampledb
+    required: true
+  - name: VOLUME_CAPACITY
+    displayName: Volume Capacity
+    description: 'Volume space available for data, e.g. 512Mi, 2Gi.'
+    value: 1Gi
+    required: true
+  - name: STORAGE_CLASS
+    displayName: Storage Class
+    description: 'Storage Class of the volume space for data, e.g. gp2, st1'
+    value: gp2
+    required: true
+labels:
+  template: couchbase-single-node-persistent-template
+
