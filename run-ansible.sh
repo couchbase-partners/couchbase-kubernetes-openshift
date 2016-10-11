@@ -6,9 +6,11 @@ source venv/bin/activate
 
 set -x
 
-pip install  -r contrib/ansible/requirements.txt
+cd contrib/ansible
 
-terraform_output=$(cd contrib/aws-terraform; terraform output -json; cd ..)
+pip install -r requirements.txt
+
+terraform_output=$(cd ../aws-terraform; terraform output -json)
 
 # check for operationg system
 operating_system=$(echo "${terraform_output}" | jq -r ".operating_system.value")

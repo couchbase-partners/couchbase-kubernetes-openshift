@@ -17,7 +17,7 @@ objects:
     spec:
       ports:
         - name: couchbase
-          port: 8901
+          port: 8091
       selector:
         name: '${DATABASE_SERVICE_NAME}'
   - kind: Service
@@ -28,7 +28,7 @@ objects:
       clusterIP: null
       ports:
         - name: couchbase
-          port: 8901
+          port: 8091
       selector:
         name: '${DATABASE_SERVICE_NAME}'
   - kind: PersistentVolumeClaim
@@ -71,16 +71,16 @@ objects:
             readinessProbe:
               initialDelaySeconds: 30
               tcpSocket:
-                port: 8901
+                port: 8091
               timeoutSeconds: 1
             livenessProbe:
               initialDelaySeconds: 30
               tcpSocket:
-                port: 8901
+                port: 8091
               timeoutSeconds: 1
             name: couchbase
             ports:
-            - containerPort: 8901
+            - containerPort: 8091
               name: couchbase
             resources:
               limits:

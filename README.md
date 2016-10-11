@@ -26,19 +26,22 @@ Make sure you have configured environemnt variables for your AWS account: http:/
 
 ### Setup infrastructure
 
-cd contrib/aws-terraform
-
+```
+# check the variables if they suit your needs (see `contrib/aws-terraform/variables.tf`)
+make terraform_apply
+```
 
 ### Setup openshift
 
 ```
+./run-ansible.sh
 
 ```
 
 ## Destory environment
 
 ```
-
+make terraform_destroy
 ```
 
 ## Demos
@@ -56,7 +59,6 @@ curl -sO https://s3-us-west-1.amazonaws.com/cb-openshift/rhel72_cb451.tar
 
 # Load into local docker
 docker load -i rhel72_cb451.tar
-docker tag afaf32cb629c private/couchbase:4.5.1-enterprise
 
 # Authorize user to be able to push
 oc policy add-role-to-user admin admin -n openshift
@@ -65,8 +67,23 @@ oc policy add-role-to-user admin admin -n openshift
 REGISTRY_IP=$(kubectl get svc docker-registry -o jsonpath={.spec.clusterIP})
 IMAGE_NAME="${REGISTRY_IP}:5000/openshift/couchbase:4.5.1-enterprise"
 # Get from https://openshift.jetstack.net:8443/console/command-line
-TOKEN=zFv_KEIZCCFG8xx_AQwqstND0gptQ9rHI6ECi0-EkL8
+TOKEN=xxx
 docker login -u admin -e tech@jetstack.io -p ${TOKEN} "${REGISTRY_IP}:5000"
 docker tag afaf32cb629c $IMAGE_NAME
 docker push $IMAGE_NAME
+```
+
+#### Adds couchbase template
+
+```
+MASTER_IP=w.x.y.z
+
+# Allow root containers
+ssh centos@${MASTER_IP} "sudo oc patch scc restricted -p '{\"runAsUser\":{\"type\": \"RunAsAny\"}}'"
+
+# Allow SETUID/SETGID
+ssh centos@${MASTER_IP} "sudo oc patch scc restricted -p '{\"requiredDropCapabilities\":[\"KILL\", \"MKNOD\", \"SYS_CHROOT\"]}'"
+
+# Creates template
+cat templates/couchbase-single-node-persistent.yaml | ssh centos@${MASTER_IP} sudo oc apply --namespace=openshift -f -
 ```
