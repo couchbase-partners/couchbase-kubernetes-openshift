@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -x 
+set -x
 
 USERNAME=${COUCHBASE_USERNAME:-admin}
 PASSWORD=${COUCHBASE_PASSWORD:-password}
