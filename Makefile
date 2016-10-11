@@ -12,6 +12,9 @@ terraform_apply:
 terraform_output:
 	cd $(TERRAFORM_DIR) && terraform output -json
 
+terraform_destroy:
+	cd $(TERRAFORM_DIR) && terraform destroy
+
 
 ansible_update:
 	pass
