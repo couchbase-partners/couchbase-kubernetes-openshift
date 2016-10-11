@@ -2,9 +2,10 @@
 
 set -x
 
-USERNAME=${COUCHBASE_USERNAME:-admin}
+USER=${COUCHBASE_USER:-admin}
 PASSWORD=${COUCHBASE_PASSWORD:-password}
 DATABASE=${COUCHBASE_DATABASE:-sampledb}
+MEMORY=256
 
 # wait for reachability
 while true; do
@@ -17,20 +18,13 @@ done
 # exit if failing
 set -e
 
-CURL="curl --fail"
-CURL_AUTH="${CURL} -u ${USERNAME}:${PASSWORD}"
+couchbase-cli cluster-init -c 127.0.0.1:8091 \
+    --cluster-init-username=${USER} \
+    --cluster-init-password=${PASSWORD} \
+    --cluster-ramsize=${MEMORY} \
+    --cluster-index-ramsize=${MEMORY} \
+    --services=data,index,query
 
-# Setup index and memory quota
-${CURL} -X POST http://127.0.0.1:8091/pools/default -d memoryQuota=256 -d indexMemoryQuota=256
-
-# Setup services
-${CURL} http://127.0.0.1:8091/node/controller/setupServices -d services=kv%2Cn1ql%2Cindex
-
-# Setup credentials
-${CURL} http://127.0.0.1:8091/settings/web -d port=8091 -d username=${USERNAME} -d password=${PASSWORD}
-
-# Setup Memory Optimized Indexes
-${CURL_AUTH} -X POST http://127.0.0.1:8091/settings/indexes -d 'storageMode=memory_optimized'
-
-# Create empty bucket
-${CURL_AUTH} -X POST http://127.0.0.1:8091/pools/default/buckets -d "name=${DATABASE}" -d "type=couchbase" -d "authType=none" -d "proxyPort=32000" -d "ramQuotaMB=256"
+couchbase-cli bucket-create -c 127.0.0.1:8091 -u ${USER} -p ${PASSWORD} \
+    --bucket=${DATABASE} --bucket-type=couchbase --bucket-port=11222 \
+    --bucket-ramsize=${MEMORY} --bucket-replica=1

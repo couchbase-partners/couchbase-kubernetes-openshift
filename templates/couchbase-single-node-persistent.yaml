@@ -20,6 +20,13 @@ objects:
           port: 8091
       selector:
         name: '${DATABASE_SERVICE_NAME}'
+  - kind: Secret
+    apiVersion: v1
+    metadata:
+      name: '${DATABASE_SERVICE_NAME}-scripts'
+    type: Opaque
+    data:
+      init-couchbase.sh: ###B64_INIT_COUCHBASE###
   - kind: Service
     apiVersion: v1
     metadata:
@@ -88,10 +95,21 @@ objects:
             volumeMounts:
             - mountPath: /opt/couchbase/var
               name: ${DATABASE_SERVICE_NAME}-data
+            - mountPath: /scripts
+              name: scripts
+            lifecycle:
+              postStart:
+                exec:
+                  command:
+                  - "bash"
+                  - "/scripts/init-couchbase.sh"
           volumes:
           - name: ${DATABASE_SERVICE_NAME}-data
             persistentVolumeClaim:
               claimName: ${DATABASE_SERVICE_NAME}
+          - name: scripts
+            secret:
+              secretName: '${DATABASE_SERVICE_NAME}-scripts'
       triggers:
       - imageChangeParams:
           automatic: true
