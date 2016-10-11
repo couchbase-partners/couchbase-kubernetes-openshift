@@ -50,40 +50,12 @@ make terraform_destroy
 
 #### Load enterprise image
 
-SSH into the master instance
-Load on all compute nodes:
-
 ```
-# Get image
-curl -sO https://s3-us-west-1.amazonaws.com/cb-openshift/rhel72_cb451.tar
-
-# Load into local docker
-docker load -i rhel72_cb451.tar
-
-# Authorize user to be able to push
-oc policy add-role-to-user admin admin -n openshift
-
-# Push into local registry
-REGISTRY_IP=$(kubectl get svc docker-registry -o jsonpath={.spec.clusterIP})
-IMAGE_NAME="${REGISTRY_IP}:5000/openshift/couchbase:4.5.1-enterprise"
-# Get from https://openshift.jetstack.net:8443/console/command-line
-TOKEN=xxx
-docker login -u admin -e tech@jetstack.io -p ${TOKEN} "${REGISTRY_IP}:5000"
-docker tag afaf32cb629c $IMAGE_NAME
-docker push $IMAGE_NAME
+make ssh_import_image
 ```
 
 #### Adds couchbase template
 
 ```
-MASTER_IP=w.x.y.z
-
-# Allow root containers
-ssh centos@${MASTER_IP} "sudo oc patch scc restricted -p '{\"runAsUser\":{\"type\": \"RunAsAny\"}}'"
-
-# Allow SETUID/SETGID
-ssh centos@${MASTER_IP} "sudo oc patch scc restricted -p '{\"requiredDropCapabilities\":[\"KILL\", \"MKNOD\", \"SYS_CHROOT\"]}'"
-
-# Creates template
-cat templates/couchbase-single-node-persistent.yaml | ssh centos@${MASTER_IP} sudo oc apply --namespace=openshift -f -
+make ssh_templates
 ```
