@@ -73,6 +73,13 @@ objects:
               value: ${COUCHBASE_PASSWORD}
             - name: COUCHBASE_DATABASE
               value: ${COUCHBASE_DATABASE}
+            - name: COUCHBASE_DATABASE
+              value: ${COUCHBASE_DATABASE}
+            - name: MEMORY_LIMIT
+              valueFrom:
+                resourceFieldRef:
+                  resource: limits.memory
+                  divisor: 1Mi
             image: ' '
             imagePullPolicy: IfNotPresent
             readinessProbe:
@@ -90,6 +97,9 @@ objects:
             - containerPort: 8091
               name: couchbase
             resources:
+              requests:
+                memory: ${MEMORY_LIMIT}
+                cpu: 0.25
               limits:
                 memory: ${MEMORY_LIMIT}
             volumeMounts:
@@ -125,7 +135,7 @@ parameters:
   - name: MEMORY_LIMIT
     displayName: Memory Limit
     description: Maximum amount of memory the container can use.
-    value: 512Mi
+    value: 1Gi
     required: true
   - name: NAMESPACE
     displayName: Namespace

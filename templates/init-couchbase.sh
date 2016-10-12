@@ -5,7 +5,8 @@ set -x
 USER=${COUCHBASE_USER:-admin}
 PASSWORD=${COUCHBASE_PASSWORD:-password}
 DATABASE=${COUCHBASE_DATABASE:-sampledb}
-MEMORY=256
+MEMORY_LIMIT=${MEMORY_LIMIT:-1024}
+MEMORY=$(expr $(expr $MEMORY_LIMIT - 256) / 2)
 
 # wait for reachability
 while true; do
