@@ -10,8 +10,8 @@ variable "node_instance_type" {
   default = "m4.large"
 }
 
-variable "aws_availability_zone" {
-  default = "eu-west-1b"
+variable "aws_availability_zones" {
+  default = ["eu-west-1a", "eu-west-1b", "eu-west-1c"]
 }
 
 variable "aws_region" {
@@ -90,36 +90,4 @@ variable "dns_zone_id" {
 
 variable "dns_zone_name" {
   default = "openshift.jetstack.net"
-}
-
-output "node_infra_ips" {
-  value = ["${aws_instance.ose-node-infra.*.public_ip}"]
-}
-
-output "nodes_infra_hosts" {
-  value = ["${aws_instance.ose-node-infra.*.public_dns}"]
-}
-
-output "node_compute_ips" {
-  value = ["${aws_instance.ose-node-compute.*.public_ip}"]
-}
-
-output "nodes_compute_hosts" {
-  value = ["${aws_instance.ose-node-compute.*.public_dns}"]
-}
-
-output "master_ip" {
-  value = ["${aws_instance.ose-master.*.public_ip}"]
-}
-
-output "master_dns" {
-  value = ["${aws_instance.ose-master.*.public_dns}"]
-}
-
-output "subnet_id" {
-  value = "${aws_subnet.main.id}"
-}
-
-output "operating_system" {
-  value = "${var.operating_system}"
 }

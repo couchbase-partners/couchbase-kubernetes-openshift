@@ -1,7 +1,8 @@
 resource "aws_subnet" "main" {
   vpc_id            = "${aws_vpc.default.id}"
-  cidr_block        = "172.18.1.0/24"
-  availability_zone = "${var.aws_availability_zone}"
+  cidr_block        = "172.18.${count.index}.0/24"
+  availability_zone = "${element(var.aws_availability_zones,count.index)}"
+  count             = "${length(var.aws_availability_zones)}"
 }
 
 resource "aws_route" "default" {

@@ -20,7 +20,16 @@ else
     deployment_type="origin"
 fi
 
-exec ansible-playbook $@ \
+VARS="cluster_id=jetstack"
+VARS="${VARS} cluster_env=dev"
+VARS="${VARS} deployment_type=${deployment_type}"
+VARS="${VARS} openshift_cloudprovider_kind=aws"
+VARS="${VARS} openshift_cloudprovider_aws_access_key=$(echo "${terraform_output}" | jq -r ".iam_access_key.value")"
+VARS="${VARS} openshift_cloudprovider_aws_secret_key=$(echo "${terraform_output}" | jq -r ".iam_secret_key.value")"
+VARS="${VARS} openshift_master_default_subdomain=$(echo "${terraform_output}" | jq -r ".hostname_apps.value")"
+VARS="${VARS} openshift_master_cluster_public_hostname=$(echo "${terraform_output}" | jq -r ".hostname_master.value")"
+
+exec ansible-playbook \
     -i inventory/aws/hosts \
-    -e "cluster_id=jetstack cluster_env=dev deployment_type=${deployment_type} openshift_cloudprovider_kind=aws openshift_cloudprovider_aws_access_key=$(echo "${terraform_output}" | jq -r ".iam_access_key.value") openshift_cloudprovider_aws_secret_key=$(echo "${terraform_output}" | jq -r ".iam_secret_key.value")" \
+    -e "${VARS}" \
     playbooks/aws/openshift-cluster/update.yml
