@@ -1,3 +1,6 @@
+> Note: Under development, not yet GA.
+
+
 # Couchbase on OpenShift v3
 
 This project describes the efforts to integrate Couchbase Server Enterprise (>=4.5) into OpenShift Enterprise (>=3.3).
