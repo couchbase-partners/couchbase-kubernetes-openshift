@@ -17,8 +17,6 @@ objects:
     data:
       couchbase.username: '${COUCHBASE_USER}'
       couchbase.password: '${COUCHBASE_PASSWORD}'
-      sidecar.master: 'podname-random'
-      sidecar.election-time: 'jstimestamp'
       couchbase.initialized: 'false'
       couchbase.query.memory-limit: '${MEMORY_LIMIT_QUERY}'
       couchbase.index.memory-limit: '${MEMORY_LIMIT_INDEX}'
