@@ -19,6 +19,7 @@ objects:
       couchbase.password: '${COUCHBASE_PASSWORD}'
       sidecar.master: 'podname-random'
       sidecar.election-time: 'jstimestamp'
+      couchbase.initialized: 'false'
       couchbase.query.memory-limit: '${MEMORY_LIMIT_QUERY}'
       couchbase.index.memory-limit: '${MEMORY_LIMIT_INDEX}'
       couchbase.data.memory-limit: '${MEMORY_LIMIT_DATA}'
@@ -103,7 +104,8 @@ objects:
                 fieldRef:
                   fieldPath: metadata.namespace
             readinessProbe:
-              tcpSocket:
+              httpGet:
+                path: /_status/ready
                 port: 8080
               timeoutSeconds: 3
             ports:
@@ -189,7 +191,8 @@ objects:
                 fieldRef:
                   fieldPath: metadata.namespace
             readinessProbe:
-              tcpSocket:
+              httpGet:
+                path: /_status/ready
                 port: 8080
               timeoutSeconds: 3
             ports:
@@ -259,7 +262,8 @@ objects:
                 fieldRef:
                   fieldPath: metadata.namespace
             readinessProbe:
-              tcpSocket:
+              httpGet:
+                path: /_status/ready
                 port: 8080
               timeoutSeconds: 3
             ports:
