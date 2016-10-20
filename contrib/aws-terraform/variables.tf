@@ -61,7 +61,7 @@ provider "aws" {
 }
 
 variable "internal_tcp_ports" {
-  default = [22, 80, 443, 8443, 10250]
+  default = [22, 80, 443, 8443, 10250, 53]
 }
 
 variable "public_tcp_ports" {
@@ -69,7 +69,7 @@ variable "public_tcp_ports" {
 }
 
 variable "udp_ports" {
-  default = [4789]
+  default = [4789, 53]
 }
 
 variable "cluster_id" {
