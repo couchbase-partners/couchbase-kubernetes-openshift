@@ -127,7 +127,7 @@ objects:
           - couchbase
           from:
             kind: ImageStreamTag
-            name: couchbase:4.5.1-enterprise
+            name: couchbase-noroot:4.5.1-enterprise
             namespace: ${NAMESPACE}
         type: ImageChange
       - type: ConfigChange

@@ -65,7 +65,7 @@ objects:
           terminationGracePeriodSeconds: 86400
           containers:
           - name: couchbase
-            image: couchbase/server:4.5.1
+            image: '${REGISTRY}/openshift/${IMAGE_NAME}'
             imagePullPolicy: IfNotPresent
             livenessProbe:
               initialDelaySeconds: 30
@@ -152,7 +152,7 @@ objects:
           terminationGracePeriodSeconds: 86400
           containers:
           - name: couchbase
-            image: couchbase/server:4.5.1
+            image: '${REGISTRY}/openshift/${IMAGE_NAME}'
             imagePullPolicy: IfNotPresent
             livenessProbe:
               initialDelaySeconds: 30
@@ -277,7 +277,7 @@ objects:
           - couchbase
           from:
             kind: ImageStreamTag
-            name: couchbase:4.5.1-enterprise
+            name: '${IMAGE_NAME}'
             namespace: ${NAMESPACE}
         type: ImageChange
       - type: ConfigChange
@@ -348,6 +348,12 @@ parameters:
     displayName: Memory Limit for query nodes
     description: Maximum amount of memory query containers can use.
     value: 1Gi
+    required: true
+  - name: IMAGE_NAME
+    value: couchbase:4.5.1-enterprise
+    required: true
+  - name: REGISTRY
+    value: 172.30.205.42:5000
     required: true
 labels:
   template: couchbase-petset-persistent-template
