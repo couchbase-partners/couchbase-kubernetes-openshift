@@ -17,7 +17,7 @@ objects:
     data:
       couchbase.username: '${COUCHBASE_USER}'
       couchbase.password: '${COUCHBASE_PASSWORD}'
-      couchbase.initialized: 'false'
+      couchbase.cluster-id: ''
       couchbase.query.memory-limit: '${MEMORY_LIMIT_QUERY}'
       couchbase.index.memory-limit: '${MEMORY_LIMIT_INDEX}'
       couchbase.data.memory-limit: '${MEMORY_LIMIT_DATA}'
