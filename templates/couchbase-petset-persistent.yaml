@@ -362,7 +362,7 @@ parameters:
     value: 1Gi
     required: true
   - name: IMAGE_NAME
-    value: couchbase:4.5.1-enterprise
+    value: couchbase-noroot:4.5.1-enterprise
     required: true
   - name: REGISTRY
     value: 172.30.205.42:5000
