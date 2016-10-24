@@ -1,0 +1,15 @@
+#!/bin/sh
+
+# Couchbase Server start script. 
+
+set -e
+
+if [ "$1" = 'couchbase-server' ]
+then
+
+    # Start couchbase
+    echo "Starting Couchbase Server -- Web UI available at http://<ip>:8091"
+    exec "$@"
+fi
+
+
