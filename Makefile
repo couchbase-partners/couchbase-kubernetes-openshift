@@ -23,10 +23,17 @@ ssh_import_image: master_ip
 	$(SSH) centos@$(MASTER_IP) sudo bash < download_import_image.sh
 
 ssh_templates: master_ip
-	$(SSH) centos@$(MASTER_IP) sudo oc patch scc restricted -p "'{\"runAsUser\":{\"type\": \"RunAsAny\"}}'"
-	$(SSH) centos@$(MASTER_IP) sudo oc patch scc restricted -p "'{\"requiredDropCapabilities\":[\"KILL\", \"MKNOD\", \"SYS_CHROOT\"]}'"
+	## only needed for the root image
+	#$(SSH) centos@$(MASTER_IP) sudo oc patch scc restricted -p "'{\"runAsUser\":{\"type\": \"RunAsAny\"}}'"
+	#$(SSH) centos@$(MASTER_IP) sudo oc patch scc restricted -p "'{\"requiredDropCapabilities\":[\"KILL\", \"MKNOD\", \"SYS_CHROOT\"]}'"
 	cat templates/couchbase-single-node-persistent.yaml | sed "s/###B64_INIT_COUCHBASE###/$(shell base64 -w 0 templates/init-couchbase.sh)/g" | $(SSH) centos@$(MASTER_IP) sudo oc apply --namespace=openshift -f -
-	cat templates/couchbase-petset-persistent.yaml | $(SSH) centos@$(MASTER_IP) sudo oc apply --namespace=openshift -f -
-
+	$(eval REGISTRY_IP = $(shell $(SSH) centos@$(MASTER_IP) sudo kubectl get svc docker-registry -o jsonpath={.spec.clusterIP}))
+	cat templates/couchbase-petset-persistent.yaml | sed "s/###REGISTRY_IP###/$(REGISTRY_IP)/g" | $(SSH) centos@$(MASTER_IP) sudo oc apply --namespace=openshift -f -
+	cat templates/couchbase-petset-ephemeral.yaml | sed "s/###REGISTRY_IP###/$(REGISTRY_IP)/g" | $(SSH) centos@$(MASTER_IP) sudo oc apply --namespace=openshift -f -
+	
+ssh_project: master_ip
+	$(SSH) centos@$(MASTER_IP) sudo oc new-project couchbase
+	$(SSH) centos@$(MASTER_IP) sudo oc policy add-role-to-user edit system:serviceaccount:couchbase:default -n couchbase
+	$(SSH) centos@$(MASTER_IP) sudo oc policy add-role-to-user admin admin -n couchbase
 ansible_update:
 	pass

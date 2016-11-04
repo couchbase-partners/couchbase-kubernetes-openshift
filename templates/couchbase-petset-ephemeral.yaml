@@ -1,12 +1,10 @@
 apiVersion: v1
 kind: Template
 metadata:
-  name: couchbase-petset-persistent
+  name: couchbase-petset-ephemeral
   annotations:
     description: >-
-      Couchbase database service, with persistent storage.
-      You must have persistent volumes available
-      in your cluster to use this template.
+      Couchbase database service, with ephemeral storage.
     iconClass: icon-couchbase
     tags: 'database,couchbase'
 objects:
@@ -113,16 +111,9 @@ objects:
             ports:
             - containerPort: 8080
               name: sidecar
-      volumeClaimTemplates:
-      - metadata:
-          name: data
-          annotations:
-            volume.alpha.kubernetes.io/storage-class: '${STORAGE_CLASS_DATA}'
-        spec:
-          accessModes: [ "ReadWriteOnce" ]
-          resources:
-            requests:
-              storage: '${VOLUME_CAPACITY_DATA}'
+          volumes:
+          - name: data
+            emptyDir: {}
   - kind: Service
     apiVersion: v1
     metadata:
@@ -204,16 +195,9 @@ objects:
             ports:
             - containerPort: 8080
               name: sidecar
-      volumeClaimTemplates:
-      - metadata:
-          name: data
-          annotations:
-            volume.alpha.kubernetes.io/storage-class: '${STORAGE_CLASS_INDEX}'
-        spec:
-          accessModes: [ "ReadWriteOnce" ]
-          resources:
-            requests:
-              storage: '${VOLUME_CAPACITY_INDEX}'
+          volumes:
+          - name: data
+            emptyDir: {}
   - apiVersion: v1
     kind: DeploymentConfig
     metadata:
@@ -329,11 +313,6 @@ parameters:
     description: 'Volume space available for data nodes, e.g. 512Mi, 2Gi.'
     value: 5Gi
     required: true
-  - name: STORAGE_CLASS_DATA
-    displayName: Storage Class for data nodes
-    description: 'Storage Class of the volume space for data nodes, e.g. gp2, st1'
-    value: gp2
-    required: true
   - name: MEMORY_LIMIT_DATA
     displayName: Memory Limit for data nodes
     description: Maximum amount of memory data container can use.
@@ -346,11 +325,6 @@ parameters:
     displayName: Volume Capacity for index nodes
     description: 'Volume space available for index nodes, e.g. 512Mi, 2Gi.'
     value: 5Gi
-    required: true
-  - name: STORAGE_CLASS_INDEX
-    displayName: Storage Class for index nodes
-    description: 'Storage Class of the volume space for index nodes, e.g. gp2, st1'
-    value: gp2
     required: true
   - name: MEMORY_LIMIT_INDEX
     displayName: Memory Limit for index nodes
@@ -368,5 +342,5 @@ parameters:
     value: ###REGISTRY_IP###:5000
     required: true
 labels:
-  template: couchbase-petset-persistent-template
+  template: couchbase-petset-ephemeral-template
 
