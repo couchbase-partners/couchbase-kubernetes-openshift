@@ -22,7 +22,10 @@ master_ip: terraform_output
 ssh_import_image: master_ip
 	$(SSH) centos@$(MASTER_IP) sudo bash < download_import_image.sh
 
-ssh_templates: master_ip
+generate_templates:
+	ruby templates/couchbase-petset-generate.rb
+
+ssh_templates: master_ip generate_templates
 	## only needed for the root image
 	#$(SSH) centos@$(MASTER_IP) sudo oc patch scc restricted -p "'{\"runAsUser\":{\"type\": \"RunAsAny\"}}'"
 	#$(SSH) centos@$(MASTER_IP) sudo oc patch scc restricted -p "'{\"requiredDropCapabilities\":[\"KILL\", \"MKNOD\", \"SYS_CHROOT\"]}'"
