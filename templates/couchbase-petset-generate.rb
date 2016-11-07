@@ -203,7 +203,7 @@ class CouchbasePetset
       'spec' =>
       {
         'serviceName' => "${DATABASE_SERVICE_NAME}-#{role}",
-        'replicas' => "${REPLICAS_#{role.upcase}",
+        'replicas' => "${REPLICAS_#{role.upcase}}",
           'template' =>
         {
           'metadata' =>
@@ -263,7 +263,7 @@ class CouchbasePetset
       'metadata' => { 'name' => "${DATABASE_SERVICE_NAME}-#{role}" },
       'spec' =>
       {
-        'replicas' => "${REPLICAS_#{role.upcase}",
+        'replicas' => "${REPLICAS_#{role.upcase}}",
         'selector' => {
           'name' => '${DATABASE_SERVICE_NAME}',
           'type' => role

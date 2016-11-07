@@ -36,7 +36,7 @@ objects:
   metadata:
     name: "${DATABASE_SERVICE_NAME}-query"
   spec:
-    replicas: "${REPLICAS_QUERY"
+    replicas: "${REPLICAS_QUERY}"
     selector:
       name: "${DATABASE_SERVICE_NAME}"
       type: query
@@ -137,7 +137,7 @@ objects:
     name: "${DATABASE_SERVICE_NAME}-data"
   spec:
     serviceName: "${DATABASE_SERVICE_NAME}-data"
-    replicas: "${REPLICAS_DATA"
+    replicas: "${REPLICAS_DATA}"
     template:
       metadata:
         labels:
@@ -235,7 +235,7 @@ objects:
     name: "${DATABASE_SERVICE_NAME}-index"
   spec:
     serviceName: "${DATABASE_SERVICE_NAME}-index"
-    replicas: "${REPLICAS_INDEX"
+    replicas: "${REPLICAS_INDEX}"
     template:
       metadata:
         labels:
