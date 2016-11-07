@@ -48,7 +48,7 @@ objects:
       spec:
         containers:
         - name: couchbase
-          image: "${REGISTRY}/openshift/${IMAGE_NAME}"
+          image: ''
           imagePullPolicy: Always
           livenessProbe:
             initialDelaySeconds: 30
@@ -327,7 +327,7 @@ parameters:
   value: couchbase-noroot:4.5.1-enterprise
   required: true
 - name: REGISTRY
-  value: "###REGISTRY_IP###"
+  value: "###REGISTRY_IP###:5000"
   required: true
 - name: REPLICAS_DATA
   displayName: Replica count of data nodes

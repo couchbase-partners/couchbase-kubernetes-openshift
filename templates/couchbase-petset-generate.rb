@@ -257,6 +257,9 @@ class CouchbasePetset
   end
 
   def deployment_config(role)
+    pod_template_noimage = pod_template(role)
+    pod_template_noimage['image'] = ''
+
     {
       'apiVersion' => 'v1',
       'kind' => 'DeploymentConfig',
@@ -277,7 +280,7 @@ class CouchbasePetset
           'spec' =>
             {
               'containers' => [
-                pod_template(role),
+                pod_template_noimage,
                 pod_template_sidecar
               ],
               'volumes' => [
@@ -394,7 +397,7 @@ class CouchbasePetset
       },
       {
         'name' => 'REGISTRY',
-        'value' => '###REGISTRY_IP###',
+        'value' => '###REGISTRY_IP###:5000',
         'required' => true
       }
     ] + parameters_per_role
