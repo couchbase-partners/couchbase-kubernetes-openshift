@@ -72,7 +72,7 @@ class CouchbasePetset
       'metadata' => { 'name' => '${DATABASE_SERVICE_NAME}' },
       'spec' =>
       {
-        'ports' => [{ 'name' => 'couchbase', 'port' => 8091 }],
+        'ports' => [{ 'name' => 'cb-admin', 'port' => 8091 }],
         'selector' => { 'name' => '${DATABASE_SERVICE_NAME}' }
       }
     }
@@ -149,7 +149,52 @@ class CouchbasePetset
           'value' => '${COUCHBASE_PASSWORD}'
         }
       ],
-      'ports' => [{ 'containerPort' => 8091, 'name' => 'couchbase' }],
+      'ports' => [
+        {
+          'containerPort' => 8091,
+          'name' => 'cb-admin'
+        },
+        {
+          'containerPort' => 8092,
+          'name' => 'cb-views'
+        },
+        {
+          'containerPort' => 8093,
+          'name' => 'cb-queries'
+        },
+        {
+          'containerPort' => 8094,
+          'name' => 'cb-search'
+        },
+        {
+          'containerPort' => 9998,
+          'name' => 'cb-internal'
+        },
+        {
+          'containerPort' => 11207,
+          'name' => 'cb-memc-ssl'
+        },
+        {
+          'containerPort' => 11210,
+          'name' => 'cb-moxi'
+        },
+        {
+          'containerPort' => 11211,
+          'name' => 'cb-memc'
+        },
+        {
+          'containerPort' => 18091,
+          'name' => 'cb-admin-ssl'
+        },
+        {
+          'containerPort' => 18092,
+          'name' => 'cb-views-ssl'
+        },
+        {
+          'containerPort' => 18093,
+          'name' => 'cb-queries-ssl'
+        },
+      ],
       'resources' => {
         'requests' => {
           'memory' => "${MEMORY_LIMIT_#{role.upcase}}",
@@ -184,7 +229,7 @@ class CouchbasePetset
       'spec' =>
       {
         'clusterIP' => 'None',
-        'ports' => [{ 'name' => 'couchbase', 'port' => 8091 }],
+        'ports' => [{ 'name' => 'cb-admin', 'port' => 8091 }],
         'selector' => {
           'name' => '${DATABASE_SERVICE_NAME}',
           'type' => role
