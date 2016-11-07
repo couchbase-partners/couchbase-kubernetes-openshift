@@ -34,6 +34,11 @@ RUN rpm --install $CB_RELEASE_URL/$CB_VERSION/$CB_PACKAGE
 #clean the cache
 RUN yum clean all
 
+# install dumb-init (to handle signals properly)
+RUN curl -sL https://github.com/Yelp/dumb-init/releases/download/v1.2.0/dumb-init_1.2.0_amd64 > /usr/local/bin/dumb-init && \
+    echo "81231da1cd074fdc81af62789fead8641ef3f24b6b07366a1c34e5b059faf363  /usr/local/bin/dumb-init" | sha256sum -c && \
+    chmod +x /usr/local/bin/dumb-init
+
 COPY scripts/couchbase-start /usr/local/bin/
 
 RUN chgrp -R 0 /opt/couchbase/var && \
@@ -54,7 +59,7 @@ LABEL RUN="docker run -d --rm --privileged -p 8091:8091 --restart always --name 
 
 USER 184
 
-ENTRYPOINT ["couchbase-start"]
+ENTRYPOINT ["dumb-init", "couchbase-start"]
 CMD ["couchbase-server", "--", "-noinput"]
 # pass -noinput so it doesn't drop us in the erlang shell
 
