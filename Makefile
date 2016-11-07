@@ -30,7 +30,7 @@ ssh_templates: master_ip generate_templates
 	#$(SSH) centos@$(MASTER_IP) sudo oc patch scc restricted -p "'{\"runAsUser\":{\"type\": \"RunAsAny\"}}'"
 	#$(SSH) centos@$(MASTER_IP) sudo oc patch scc restricted -p "'{\"requiredDropCapabilities\":[\"KILL\", \"MKNOD\", \"SYS_CHROOT\"]}'"
 	cat templates/couchbase-single-node-persistent.yaml | sed "s/###B64_INIT_COUCHBASE###/$(shell base64 -w 0 templates/init-couchbase.sh)/g" | $(SSH) centos@$(MASTER_IP) sudo oc apply --namespace=openshift -f -
-	$(eval REGISTRY_IP = $(shell $(SSH) centos@$(MASTER_IP) sudo kubectl get svc docker-registry -o jsonpath={.spec.clusterIP}))
+	$(eval REGISTRY_IP = $(shell $(SSH) centos@$(MASTER_IP) sudo kubectl --namespace default get svc docker-registry -o jsonpath={.spec.clusterIP}))
 	cat templates/couchbase-petset-persistent.yaml | sed "s/###REGISTRY_IP###/$(REGISTRY_IP)/g" | $(SSH) centos@$(MASTER_IP) sudo oc apply --namespace=openshift -f -
 	cat templates/couchbase-petset-ephemeral.yaml | sed "s/###REGISTRY_IP###/$(REGISTRY_IP)/g" | $(SSH) centos@$(MASTER_IP) sudo oc apply --namespace=openshift -f -
 	

@@ -11,5 +11,3 @@ then
     echo "Starting Couchbase Server -- Web UI available at http://<ip>:8091"
     exec "$@"
 fi
-
-
