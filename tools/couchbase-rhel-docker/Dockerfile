@@ -8,8 +8,6 @@ MAINTAINER Couchbase Docker Team <docker@couchbase.com>
 ARG RH_USER
 ARG RH_PASSWORD
 
-RUN echo $RH_USER $RH_PASSWORD
-
 RUN subscription-manager register --username $RH_USER --password $RH_PASSWORD --auto-attach
 
 # Update server
