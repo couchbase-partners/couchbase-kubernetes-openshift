@@ -60,6 +60,12 @@ objects:
             value: "${COUCHBASE_USER}"
           - name: COUCHBASE_PASSWORD
             value: "${COUCHBASE_PASSWORD}"
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                - "/sidecar/couchbase-sidecar"
+                - stop
           ports:
           - containerPort: 8091
             name: cb-admin
@@ -92,6 +98,8 @@ objects:
           volumeMounts:
           - mountPath: "/opt/couchbase/var"
             name: data
+          - mountPath: "/sidecar"
+            name: sidecar
         - name: couchbase-sidecar
           image: jetstackexperimental/couchbase-sidecar:0.0.2
           imagePullPolicy: Always
@@ -122,8 +130,13 @@ objects:
           ports:
           - containerPort: 8080
             name: sidecar
+          volumeMounts:
+          - mountPath: "/sidecar"
+            name: sidecar
         volumes:
         - name: data
+          emptyDir: {}
+        - name: sidecar
           emptyDir: {}
     triggers:
     - imageChangeParams:
@@ -181,6 +194,12 @@ objects:
             value: "${COUCHBASE_USER}"
           - name: COUCHBASE_PASSWORD
             value: "${COUCHBASE_PASSWORD}"
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                - "/sidecar/couchbase-sidecar"
+                - stop
           ports:
           - containerPort: 8091
             name: cb-admin
@@ -213,6 +232,8 @@ objects:
           volumeMounts:
           - mountPath: "/opt/couchbase/var"
             name: data
+          - mountPath: "/sidecar"
+            name: sidecar
         - name: couchbase-sidecar
           image: jetstackexperimental/couchbase-sidecar:0.0.2
           imagePullPolicy: Always
@@ -243,7 +264,12 @@ objects:
           ports:
           - containerPort: 8080
             name: sidecar
+          volumeMounts:
+          - mountPath: "/sidecar"
+            name: sidecar
         volumes:
+        - name: sidecar
+          emptyDir: {}
         - name: data
           emptyDir: {}
 - kind: Service
@@ -291,6 +317,12 @@ objects:
             value: "${COUCHBASE_USER}"
           - name: COUCHBASE_PASSWORD
             value: "${COUCHBASE_PASSWORD}"
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                - "/sidecar/couchbase-sidecar"
+                - stop
           ports:
           - containerPort: 8091
             name: cb-admin
@@ -323,6 +355,8 @@ objects:
           volumeMounts:
           - mountPath: "/opt/couchbase/var"
             name: data
+          - mountPath: "/sidecar"
+            name: sidecar
         - name: couchbase-sidecar
           image: jetstackexperimental/couchbase-sidecar:0.0.2
           imagePullPolicy: Always
@@ -353,7 +387,12 @@ objects:
           ports:
           - containerPort: 8080
             name: sidecar
+          volumeMounts:
+          - mountPath: "/sidecar"
+            name: sidecar
         volumes:
+        - name: sidecar
+          emptyDir: {}
         - name: data
           emptyDir: {}
 parameters:

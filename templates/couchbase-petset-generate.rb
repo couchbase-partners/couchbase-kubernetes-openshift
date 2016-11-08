@@ -123,7 +123,14 @@ class CouchbasePetset
       'ports' => [{
         'containerPort' => 8080,
         'name' => 'sidecar'
-      }]
+      }],
+      'volumeMounts' =>
+      [
+        {
+          'mountPath' => '/sidecar',
+          'name' => 'sidecar'
+        }
+      ]
     }
   end
 
@@ -149,6 +156,13 @@ class CouchbasePetset
           'value' => '${COUCHBASE_PASSWORD}'
         }
       ],
+      'lifecycle' => {
+        'preStop' => {
+          'exec' => {
+            'command' => ['/sidecar/couchbase-sidecar', 'stop']
+          }
+        }
+      },
       'ports' => [
         {
           'containerPort' => 8091,
@@ -209,6 +223,10 @@ class CouchbasePetset
         {
           'mountPath' => '/opt/couchbase/var',
           'name' => 'data'
+        },
+        {
+          'mountPath' => '/sidecar',
+          'name' => 'sidecar'
         }
       ]
     }
@@ -267,6 +285,12 @@ class CouchbasePetset
             'containers' => [
               pod_template(role),
               pod_template_sidecar
+            ],
+            'volumes' => [
+              {
+                'name' => 'sidecar',
+                'emptyDir' => {}
+              }
             ]
           }
         },
@@ -291,12 +315,10 @@ class CouchbasePetset
         }
       }]
     else
-      petset['spec']['template']['spec']['volumes'] = [
-        {
-          'name' => 'data',
-          'emptyDir' => {}
-        }
-      ]
+      petset['spec']['template']['spec']['volumes'] << {
+        'name' => 'data',
+        'emptyDir' => {}
+      }
     end
     petset
   end
@@ -331,6 +353,10 @@ class CouchbasePetset
               'volumes' => [
                 {
                   'name' => 'data',
+                  'emptyDir' => {}
+                },
+                {
+                  'name' => 'sidecar',
                   'emptyDir' => {}
                 }
               ]
