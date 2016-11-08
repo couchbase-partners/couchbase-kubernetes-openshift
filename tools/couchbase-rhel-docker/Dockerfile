@@ -4,8 +4,13 @@ FROM registry.access.redhat.com/rhel7
 
 MAINTAINER Couchbase Docker Team <docker@couchbase.com>
 
-# replace with RH subscription user/password
-RUN subscription-manager register --username xxxx --password xxxx --auto-attach
+# build-time args for RH subscription
+ARG RH_USER
+ARG RH_PASSWORD
+
+RUN echo $RH_USER $RH_PASSWORD
+
+RUN subscription-manager register --username $RH_USER --password $RH_PASSWORD --auto-attach
 
 # Update server
 RUN yum -y update; yum clean all
