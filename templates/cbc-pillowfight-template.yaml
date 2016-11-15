@@ -1,0 +1,91 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: cbc-pillowfight
+  annotations:
+    description: cbc-pillowfight - Stress Test for Couchbase Client and Cluster
+    iconClass: icon-couchbase
+    tags: database,couchbase,cbc-pillowfight
+objects:
+  - apiVersion: v1
+    kind: ReplicationController
+    metadata:
+      name: cbc-pillowfight
+    spec:
+      replicas: ${REPLICA_COUNT}
+      template:
+        metadata:
+          name: cbc-pillowfight
+          labels:
+            app: cbc-pillowfight
+        spec:
+          containers:
+            - name: cbc-pillowfight
+              image: ${REGISTRY}/nmotte/cbc-pillowfight:0.0.1
+              imagePullPolicy: Always
+              env:
+                - name: BATCHSIZE
+                  value: "${BATCHSIZE}"
+                - name: NUMITEMS
+                  value: "${NUMITEMS}"
+                - name: PREFIX
+                  value: "${PREFIX}"
+                - name: NTHREADS
+                  value: "${NTHREADS}"
+                - name: PERCENTAGE
+                  value: "${PERCENTAGE}"
+                - name: MINSIZE
+                  value: "${MINSIZE}"
+                - name: MAXSIZE
+                  value: "${MAXSIZE}"
+                - name: SPEC
+                  value: "${SPEC}"
+                - name: SASLPASS
+                  value: "${SASLPASS}"
+                - name: USECS
+                  value: "${USECS}"
+parameters:
+  - name: REPLICA_COUNT
+    description: Number of replicas to run
+    value: "1"
+    required: true
+  - name: REGISTRY
+    value: "registry.hub.docker.com"
+    required: true
+  - name: BATCHSIZE
+    description: This controls how many commands are scheduled per cycles. To simulate one operation at a time, set this value to 1.
+    value: "1"
+    required: true
+  - name: NUMITEMS
+    description: Set the total number of items the workload will access within the cluster. This will also determine the working set size at the server and may affect disk latencies if set to a high number.
+    value: "1500000000"
+    required: true
+  - name: PREFIX
+    description: Set the prefix to prepend to all keys in the cluster. Useful if you do not wish the items to conflict with existing data.
+    required: true
+  - name: NTHREADS
+    description: Set the number of threads (and thus the number of client instances) to run concurrently. Each thread is assigned its own client object.
+    value: "1"
+    required: true
+  - name: PERCENTAGE
+    description: The percentage of operations which should be mutations. A value of 100 means only mutations while a value of 0 means only retrievals.
+    value: "50"
+    required: true
+  - name: MINSIZE
+    description: Specify the minimum value sizes to be stored into the cluster.
+    value: "100"
+    required: true
+  - name: MAXSIZE
+    description: Specify the maximum value sizes to be stored into the cluster.
+    value: "200"
+    required: true
+  - name: SPEC
+    description: A string describing the cluster to connect to. The string is in a URI-like syntax, and may also contain other options. Typically such a URI will look like couchbase://$COUCHBASE_SERVICE_HOST/bucket
+    required: true
+  - name: SASLPASS
+    description: Specify the SASL password for the bucket. This is only needed if the bucket is protected with a password. Note that this is not the administrative password used to log into the web interface.
+    required: true
+  - name: USECS
+    description: Specify the operation timeout in microseconds. This is the time the client will wait for an operation to complete before timing it out. The default is 2500000
+    required: false
+
