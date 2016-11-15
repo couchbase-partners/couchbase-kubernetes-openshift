@@ -245,7 +245,7 @@ class CouchbasePetset
       'resources' => {
         'requests' => {
           'memory' => "${MEMORY_LIMIT_#{role.upcase}}",
-          'cpu' => 0.25
+          'cpu' => 0.1
         },
         'limits' => {
           'memory' => "${MEMORY_LIMIT_#{role.upcase}}"
@@ -468,7 +468,7 @@ class CouchbasePetset
         'name' => "MEMORY_LIMIT_#{role.upcase}",
         'displayName' => "Memory Limit for #{role} nodes",
         'description' => "Maximum amount of memory #{role} container can use.",
-        'value' => '1Gi'
+        'value' => '512Mi'
       }
 
       next unless (role != 'query') && (storage_type == 'persistent')

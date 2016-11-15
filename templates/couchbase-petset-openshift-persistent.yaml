@@ -93,7 +93,7 @@ objects:
           resources:
             requests:
               memory: "${MEMORY_LIMIT_QUERY}"
-              cpu: 0.25
+              cpu: 0.1
             limits:
               memory: "${MEMORY_LIMIT_QUERY}"
           volumeMounts:
@@ -227,7 +227,7 @@ objects:
           resources:
             requests:
               memory: "${MEMORY_LIMIT_DATA}"
-              cpu: 0.25
+              cpu: 0.1
             limits:
               memory: "${MEMORY_LIMIT_DATA}"
           volumeMounts:
@@ -359,7 +359,7 @@ objects:
           resources:
             requests:
               memory: "${MEMORY_LIMIT_INDEX}"
-              cpu: 0.25
+              cpu: 0.1
             limits:
               memory: "${MEMORY_LIMIT_INDEX}"
           volumeMounts:
@@ -454,7 +454,7 @@ parameters:
 - name: MEMORY_LIMIT_DATA
   displayName: Memory Limit for data nodes
   description: Maximum amount of memory data container can use.
-  value: 1Gi
+  value: 512Mi
 - name: VOLUME_CAPACITY_DATA
   displayName: Volume Capacity for data nodes
   description: Volume space available for data nodes, e.g. 512Mi, 2Gi.
@@ -472,7 +472,7 @@ parameters:
 - name: MEMORY_LIMIT_INDEX
   displayName: Memory Limit for index nodes
   description: Maximum amount of memory index container can use.
-  value: 1Gi
+  value: 512Mi
 - name: VOLUME_CAPACITY_INDEX
   displayName: Volume Capacity for index nodes
   description: Volume space available for index nodes, e.g. 512Mi, 2Gi.
@@ -490,6 +490,6 @@ parameters:
 - name: MEMORY_LIMIT_QUERY
   displayName: Memory Limit for query nodes
   description: Maximum amount of memory query container can use.
-  value: 1Gi
+  value: 512Mi
 labels:
   template: couchbase-petset-persistent-template

@@ -12,9 +12,9 @@ items:
     couchbase.password: k8s-rulez
     couchbase.cluster-id: ''
     couchbase.bucket.bucket: ''
-    couchbase.data.memory-limit: 1Gi
-    couchbase.index.memory-limit: 1Gi
-    couchbase.query.memory-limit: 1Gi
+    couchbase.data.memory-limit: 512Mi
+    couchbase.index.memory-limit: 512Mi
+    couchbase.query.memory-limit: 512Mi
 - kind: Service
   apiVersion: v1
   metadata:
@@ -83,10 +83,10 @@ items:
             name: cb-queries-ssl
           resources:
             requests:
-              memory: 1Gi
-              cpu: 0.25
+              memory: 512Mi
+              cpu: 0.1
             limits:
-              memory: 1Gi
+              memory: 512Mi
           volumeMounts:
           - mountPath: "/opt/couchbase/var"
             name: data
@@ -206,10 +206,10 @@ items:
             name: cb-queries-ssl
           resources:
             requests:
-              memory: 1Gi
-              cpu: 0.25
+              memory: 512Mi
+              cpu: 0.1
             limits:
-              memory: 1Gi
+              memory: 512Mi
           volumeMounts:
           - mountPath: "/opt/couchbase/var"
             name: data
@@ -338,10 +338,10 @@ items:
             name: cb-queries-ssl
           resources:
             requests:
-              memory: 1Gi
-              cpu: 0.25
+              memory: 512Mi
+              cpu: 0.1
             limits:
-              memory: 1Gi
+              memory: 512Mi
           volumeMounts:
           - mountPath: "/opt/couchbase/var"
             name: data

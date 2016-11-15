@@ -92,7 +92,7 @@ objects:
           resources:
             requests:
               memory: "${MEMORY_LIMIT_QUERY}"
-              cpu: 0.25
+              cpu: 0.1
             limits:
               memory: "${MEMORY_LIMIT_QUERY}"
           volumeMounts:
@@ -226,7 +226,7 @@ objects:
           resources:
             requests:
               memory: "${MEMORY_LIMIT_DATA}"
-              cpu: 0.25
+              cpu: 0.1
             limits:
               memory: "${MEMORY_LIMIT_DATA}"
           volumeMounts:
@@ -349,7 +349,7 @@ objects:
           resources:
             requests:
               memory: "${MEMORY_LIMIT_INDEX}"
-              cpu: 0.25
+              cpu: 0.1
             limits:
               memory: "${MEMORY_LIMIT_INDEX}"
           volumeMounts:
@@ -435,7 +435,7 @@ parameters:
 - name: MEMORY_LIMIT_DATA
   displayName: Memory Limit for data nodes
   description: Maximum amount of memory data container can use.
-  value: 1Gi
+  value: 512Mi
 - name: REPLICAS_INDEX
   displayName: Replica count of data nodes
   description: How many index nodes get provisioned
@@ -443,7 +443,7 @@ parameters:
 - name: MEMORY_LIMIT_INDEX
   displayName: Memory Limit for index nodes
   description: Maximum amount of memory index container can use.
-  value: 1Gi
+  value: 512Mi
 - name: REPLICAS_QUERY
   displayName: Replica count of data nodes
   description: How many query nodes get provisioned
@@ -451,6 +451,6 @@ parameters:
 - name: MEMORY_LIMIT_QUERY
   displayName: Memory Limit for query nodes
   description: Maximum amount of memory query container can use.
-  value: 1Gi
+  value: 512Mi
 labels:
   template: couchbase-petset-ephemeral-template
