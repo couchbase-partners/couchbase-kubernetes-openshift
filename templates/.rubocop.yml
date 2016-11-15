@@ -1,0 +1,21 @@
+Metrics/AbcSize:
+  Exclude:
+    - 'couchbase-petset-generate.rb'
+Metrics/BlockLength:
+  Exclude:
+    - 'couchbase-petset-generate.rb'
+Metrics/ClassLength:
+  Exclude:
+    - 'couchbase-petset-generate.rb'
+Metrics/MethodLength:
+  Exclude:
+    - 'couchbase-petset-generate.rb'
+Metrics/LineLength:
+  Exclude:
+    - 'couchbase-petset-generate.rb'
+Style/Documentation:
+  Exclude:
+    - 'couchbase-petset-generate.rb'
+Style/FileName:
+  Exclude:
+    - 'couchbase-petset-generate.rb'

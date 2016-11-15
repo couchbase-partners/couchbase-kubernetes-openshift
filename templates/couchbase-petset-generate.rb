@@ -3,16 +3,49 @@ require 'pathname'
 
 class CouchbasePetset
   def initialize(opts = {})
-    @storage_type = opts['storage_type']
+    @opts = opts
   end
 
-  def template
+  def storage_type
+    @opts['storage_type'] || 'ephemeral'
+  end
+
+  def image_pull_policy
+    @opts['image_pull_policy'] || 'Always'
+  end
+
+  def image
+    @opts['image'] || '${REGISTRY}/openshift/${IMAGE_NAME}'
+  end
+
+  def image_sidecar
+    @opts['image_sidecar'] || 'jetstackexperimental/couchbase-sidecar:0.0.2'
+  end
+
+  def k8s_template
+    {
+      'apiVersion' => 'v1',
+      'kind' => 'List',
+      'metadata' => {},
+      'items' => [
+        config_map,
+        global_service,
+        deployment('query'),
+        petset_service('data'),
+        petset('data'),
+        petset_service('index'),
+        petset('index')
+      ]
+    }
+  end
+
+  def openshift_template
     {
       'apiVersion' => 'v1',
       'kind' => 'Template',
       'metadata' =>
       {
-        'name' => "couchbase-petset-#{@storage_type}",
+        'name' => "couchbase-petset-#{storage_type}",
         'annotations' =>
         {
           'description' => template_description,
@@ -36,10 +69,10 @@ class CouchbasePetset
   end
 
   def template_description
-    if @storage_type == 'persistent'
+    if storage_type == 'persistent'
       'Couchbase database service, with persistent storage. You must have persistent volumes available in your cluster to use this template.'
     else
-      "Couchbase database service, with #{@storage_type} storage."
+      "Couchbase database service, with #{storage_type} storage."
     end
   end
 
@@ -85,8 +118,8 @@ class CouchbasePetset
   def pod_template_sidecar
     {
       'name' => 'couchbase-sidecar',
-      'image' => 'jetstackexperimental/couchbase-sidecar:0.0.2',
-      'imagePullPolicy' => 'Always',
+      'image' => image_sidecar,
+      'imagePullPolicy' => image_pull_policy,
       'env' =>
       [
         {
@@ -137,8 +170,8 @@ class CouchbasePetset
   def pod_template(role)
     {
       'name' => 'couchbase',
-      'image' => '${REGISTRY}/openshift/${IMAGE_NAME}',
-      'imagePullPolicy' => 'Always',
+      'image' => image,
+      'imagePullPolicy' => image_pull_policy,
       'livenessProbe' =>
       {
         'initialDelaySeconds' => 30,
@@ -185,29 +218,29 @@ class CouchbasePetset
           'name' => 'cb-internal'
         },
         {
-          'containerPort' => 11207,
+          'containerPort' => 11_207,
           'name' => 'cb-memc-ssl'
         },
         {
-          'containerPort' => 11210,
+          'containerPort' => 11_210,
           'name' => 'cb-moxi'
         },
         {
-          'containerPort' => 11211,
+          'containerPort' => 11_211,
           'name' => 'cb-memc'
         },
         {
-          'containerPort' => 18091,
+          'containerPort' => 18_091,
           'name' => 'cb-admin-ssl'
         },
         {
-          'containerPort' => 18092,
+          'containerPort' => 18_092,
           'name' => 'cb-views-ssl'
         },
         {
-          'containerPort' => 18093,
+          'containerPort' => 18_093,
           'name' => 'cb-queries-ssl'
-        },
+        }
       ],
       'resources' => {
         'requests' => {
@@ -267,7 +300,7 @@ class CouchbasePetset
       {
         'serviceName' => "${DATABASE_SERVICE_NAME}-#{role}",
         'replicas' => "${REPLICAS_#{role.upcase}}",
-          'template' =>
+        'template' =>
         {
           'metadata' =>
           {
@@ -293,11 +326,11 @@ class CouchbasePetset
               }
             ]
           }
-        },
+        }
       }
     }
 
-    if @storage_type == 'persistent'
+    if storage_type == 'persistent'
       petset['spec']['volumeClaimTemplates'] = [{
         'metadata' => {
           'name' => 'data',
@@ -321,6 +354,42 @@ class CouchbasePetset
       }
     end
     petset
+  end
+
+  def deployment(role)
+    {
+      'apiVersion' => 'extensions/v1beta1',
+      'kind' => 'Deployment',
+      'metadata' => { 'name' => "${DATABASE_SERVICE_NAME}-#{role}" },
+      'spec' =>
+      {
+        'replicas' => "${REPLICAS_#{role.upcase}}",
+        'template' => {
+          'metadata' =>
+          { 'labels' =>
+            { 'name' => '${DATABASE_SERVICE_NAME}',
+              'app' => 'couchbase',
+              'type' => role } },
+          'spec' =>
+            {
+              'containers' => [
+                pod_template(role),
+                pod_template_sidecar
+              ],
+              'volumes' => [
+                {
+                  'name' => 'data',
+                  'emptyDir' => {}
+                },
+                {
+                  'name' => 'sidecar',
+                  'emptyDir' => {}
+                }
+              ]
+            }
+        }
+      }
+    }
   end
 
   def deployment_config(role)
@@ -383,7 +452,7 @@ class CouchbasePetset
   end
 
   def labels
-    { 'template' => "couchbase-petset-#{@storage_type}-template" }
+    { 'template' => "couchbase-petset-#{storage_type}-template" }
   end
 
   def parameters_per_role
@@ -402,7 +471,7 @@ class CouchbasePetset
         'value' => '1Gi'
       }
 
-      next unless (role != 'query') && (@storage_type == 'persistent')
+      next unless (role != 'query') && (storage_type == 'persistent')
       params << {
         'name' => "VOLUME_CAPACITY_#{role.upcase}",
         'displayName' => "Volume Capacity for #{role} nodes",
@@ -475,11 +544,45 @@ class CouchbasePetset
   end
 end
 
-dir = Pathname.new File.dirname(__FILE__)
+def write_openshift_templates
+  dir = Pathname.new File.dirname(__FILE__)
 
-%w(persistent ephemeral).each do |storage_type|
-  c = CouchbasePetset.new('storage_type' => storage_type)
-  File.open(dir.join("couchbase-petset-#{storage_type}.yaml"), 'w') do |file|
-    file.write c.template.to_yaml
+  %w(persistent ephemeral).each do |storage_type|
+    c = CouchbasePetset.new('storage_type' => storage_type)
+    File.open(dir.join("couchbase-petset-openshift-#{storage_type}.yaml"), 'w') do |file|
+      file.write c.openshift_template.to_yaml
+    end
   end
 end
+
+def write_k8s_templates
+  dir = Pathname.new File.dirname(__FILE__)
+
+  %w(persistent ephemeral).each do |storage_type|
+    c = CouchbasePetset.new(
+      'storage_type' => storage_type,
+      'image_pull_policy' => 'IfNotPresent',
+      'image' => 'couchbase:rhel-4.5.1'
+    )
+    File.open(dir.join("couchbase-petset-k8s-#{storage_type}.yaml"), 'w') do |file|
+      data = c.k8s_template.to_yaml
+      c.parameters.each do |param|
+        value = param['value']
+        value = 'admin' if param['name'] == 'COUCHBASE_USER'
+        value = 'k8s-rulez' if param['name'] == 'COUCHBASE_PASSWORD'
+
+        next if value.nil?
+
+        needle = Regexp.escape("${#{param['name']}}")
+
+        data = data.gsub(/"#{needle}"/, value)
+        data = data.gsub(/'#{needle}'/, value)
+        data = data.gsub(/#{needle}/, value)
+      end
+      file.write data
+    end
+  end
+end
+
+write_openshift_templates
+write_k8s_templates

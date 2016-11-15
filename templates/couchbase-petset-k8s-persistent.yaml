@@ -1,0 +1,396 @@
+---
+apiVersion: v1
+kind: List
+metadata: {}
+items:
+- kind: ConfigMap
+  apiVersion: v1
+  metadata:
+    name: couchbase
+  data:
+    couchbase.username: admin
+    couchbase.password: k8s-rulez
+    couchbase.cluster-id: ''
+    couchbase.bucket.bucket: ''
+    couchbase.data.memory-limit: 1Gi
+    couchbase.index.memory-limit: 1Gi
+    couchbase.query.memory-limit: 1Gi
+- kind: Service
+  apiVersion: v1
+  metadata:
+    name: couchbase
+  spec:
+    ports:
+    - name: cb-admin
+      port: 8091
+    selector:
+      name: couchbase
+- apiVersion: extensions/v1beta1
+  kind: Deployment
+  metadata:
+    name: "couchbase-query"
+  spec:
+    replicas: 3
+    template:
+      metadata:
+        labels:
+          name: couchbase
+          app: couchbase
+          type: query
+      spec:
+        containers:
+        - name: couchbase
+          image: couchbase:rhel-4.5.1
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            initialDelaySeconds: 30
+            tcpSocket:
+              port: 8091
+            timeoutSeconds: 1
+          env:
+          - name: COUCHBASE_USER
+            value: admin
+          - name: COUCHBASE_PASSWORD
+            value: k8s-rulez
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                - "/sidecar/couchbase-sidecar"
+                - stop
+          ports:
+          - containerPort: 8091
+            name: cb-admin
+          - containerPort: 8092
+            name: cb-views
+          - containerPort: 8093
+            name: cb-queries
+          - containerPort: 8094
+            name: cb-search
+          - containerPort: 9998
+            name: cb-internal
+          - containerPort: 11207
+            name: cb-memc-ssl
+          - containerPort: 11210
+            name: cb-moxi
+          - containerPort: 11211
+            name: cb-memc
+          - containerPort: 18091
+            name: cb-admin-ssl
+          - containerPort: 18092
+            name: cb-views-ssl
+          - containerPort: 18093
+            name: cb-queries-ssl
+          resources:
+            requests:
+              memory: 1Gi
+              cpu: 0.25
+            limits:
+              memory: 1Gi
+          volumeMounts:
+          - mountPath: "/opt/couchbase/var"
+            name: data
+          - mountPath: "/sidecar"
+            name: sidecar
+        - name: couchbase-sidecar
+          image: jetstackexperimental/couchbase-sidecar:0.0.2
+          imagePullPolicy: IfNotPresent
+          env:
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+          readinessProbe:
+            httpGet:
+              path: "/_status/ready"
+              port: 8080
+            timeoutSeconds: 3
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                - "/couchbase-sidecar"
+                - stop
+          ports:
+          - containerPort: 8080
+            name: sidecar
+          volumeMounts:
+          - mountPath: "/sidecar"
+            name: sidecar
+        volumes:
+        - name: data
+          emptyDir: {}
+        - name: sidecar
+          emptyDir: {}
+- kind: Service
+  apiVersion: v1
+  metadata:
+    name: "couchbase-data"
+    annotations:
+      service.alpha.kubernetes.io/tolerate-unready-endpoints: 'true'
+  spec:
+    clusterIP: None
+    ports:
+    - name: cb-admin
+      port: 8091
+    selector:
+      name: couchbase
+      type: data
+- apiVersion: apps/v1alpha1
+  kind: PetSet
+  metadata:
+    name: "couchbase-data"
+  spec:
+    serviceName: "couchbase-data"
+    replicas: 3
+    template:
+      metadata:
+        labels:
+          name: couchbase
+          app: couchbase
+          type: data
+        annotations:
+          pod.alpha.kubernetes.io/initialized: 'true'
+      spec:
+        terminationGracePeriodSeconds: 86400
+        containers:
+        - name: couchbase
+          image: couchbase:rhel-4.5.1
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            initialDelaySeconds: 30
+            tcpSocket:
+              port: 8091
+            timeoutSeconds: 1
+          env:
+          - name: COUCHBASE_USER
+            value: admin
+          - name: COUCHBASE_PASSWORD
+            value: k8s-rulez
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                - "/sidecar/couchbase-sidecar"
+                - stop
+          ports:
+          - containerPort: 8091
+            name: cb-admin
+          - containerPort: 8092
+            name: cb-views
+          - containerPort: 8093
+            name: cb-queries
+          - containerPort: 8094
+            name: cb-search
+          - containerPort: 9998
+            name: cb-internal
+          - containerPort: 11207
+            name: cb-memc-ssl
+          - containerPort: 11210
+            name: cb-moxi
+          - containerPort: 11211
+            name: cb-memc
+          - containerPort: 18091
+            name: cb-admin-ssl
+          - containerPort: 18092
+            name: cb-views-ssl
+          - containerPort: 18093
+            name: cb-queries-ssl
+          resources:
+            requests:
+              memory: 1Gi
+              cpu: 0.25
+            limits:
+              memory: 1Gi
+          volumeMounts:
+          - mountPath: "/opt/couchbase/var"
+            name: data
+          - mountPath: "/sidecar"
+            name: sidecar
+        - name: couchbase-sidecar
+          image: jetstackexperimental/couchbase-sidecar:0.0.2
+          imagePullPolicy: IfNotPresent
+          env:
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+          readinessProbe:
+            httpGet:
+              path: "/_status/ready"
+              port: 8080
+            timeoutSeconds: 3
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                - "/couchbase-sidecar"
+                - stop
+          ports:
+          - containerPort: 8080
+            name: sidecar
+          volumeMounts:
+          - mountPath: "/sidecar"
+            name: sidecar
+        volumes:
+        - name: sidecar
+          emptyDir: {}
+    volumeClaimTemplates:
+    - metadata:
+        name: data
+        annotations:
+          volume.alpha.kubernetes.io/storage-class: gp2
+      spec:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 5Gi
+- kind: Service
+  apiVersion: v1
+  metadata:
+    name: "couchbase-index"
+    annotations:
+      service.alpha.kubernetes.io/tolerate-unready-endpoints: 'true'
+  spec:
+    clusterIP: None
+    ports:
+    - name: cb-admin
+      port: 8091
+    selector:
+      name: couchbase
+      type: index
+- apiVersion: apps/v1alpha1
+  kind: PetSet
+  metadata:
+    name: "couchbase-index"
+  spec:
+    serviceName: "couchbase-index"
+    replicas: 3
+    template:
+      metadata:
+        labels:
+          name: couchbase
+          app: couchbase
+          type: index
+        annotations:
+          pod.alpha.kubernetes.io/initialized: 'true'
+      spec:
+        terminationGracePeriodSeconds: 86400
+        containers:
+        - name: couchbase
+          image: couchbase:rhel-4.5.1
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            initialDelaySeconds: 30
+            tcpSocket:
+              port: 8091
+            timeoutSeconds: 1
+          env:
+          - name: COUCHBASE_USER
+            value: admin
+          - name: COUCHBASE_PASSWORD
+            value: k8s-rulez
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                - "/sidecar/couchbase-sidecar"
+                - stop
+          ports:
+          - containerPort: 8091
+            name: cb-admin
+          - containerPort: 8092
+            name: cb-views
+          - containerPort: 8093
+            name: cb-queries
+          - containerPort: 8094
+            name: cb-search
+          - containerPort: 9998
+            name: cb-internal
+          - containerPort: 11207
+            name: cb-memc-ssl
+          - containerPort: 11210
+            name: cb-moxi
+          - containerPort: 11211
+            name: cb-memc
+          - containerPort: 18091
+            name: cb-admin-ssl
+          - containerPort: 18092
+            name: cb-views-ssl
+          - containerPort: 18093
+            name: cb-queries-ssl
+          resources:
+            requests:
+              memory: 1Gi
+              cpu: 0.25
+            limits:
+              memory: 1Gi
+          volumeMounts:
+          - mountPath: "/opt/couchbase/var"
+            name: data
+          - mountPath: "/sidecar"
+            name: sidecar
+        - name: couchbase-sidecar
+          image: jetstackexperimental/couchbase-sidecar:0.0.2
+          imagePullPolicy: IfNotPresent
+          env:
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+          readinessProbe:
+            httpGet:
+              path: "/_status/ready"
+              port: 8080
+            timeoutSeconds: 3
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                - "/couchbase-sidecar"
+                - stop
+          ports:
+          - containerPort: 8080
+            name: sidecar
+          volumeMounts:
+          - mountPath: "/sidecar"
+            name: sidecar
+        volumes:
+        - name: sidecar
+          emptyDir: {}
+    volumeClaimTemplates:
+    - metadata:
+        name: data
+        annotations:
+          volume.alpha.kubernetes.io/storage-class: gp2
+      spec:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 5Gi
