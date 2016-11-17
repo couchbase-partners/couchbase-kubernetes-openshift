@@ -25,11 +25,26 @@ items:
       port: 8091
     selector:
       name: couchbase
-- apiVersion: extensions/v1beta1
-  kind: Deployment
+- kind: Service
+  apiVersion: v1
+  metadata:
+    name: "couchbase-query"
+    annotations:
+      service.alpha.kubernetes.io/tolerate-unready-endpoints: 'true'
+  spec:
+    clusterIP: None
+    ports:
+    - name: cb-admin
+      port: 8091
+    selector:
+      name: couchbase
+      type: query
+- apiVersion: apps/v1alpha1
+  kind: PetSet
   metadata:
     name: "couchbase-query"
   spec:
+    serviceName: "couchbase-query"
     replicas: 3
     template:
       metadata:
@@ -37,7 +52,10 @@ items:
           name: couchbase
           app: couchbase
           type: query
+        annotations:
+          pod.alpha.kubernetes.io/initialized: 'true'
       spec:
+        terminationGracePeriodSeconds: 86400
         containers:
         - name: couchbase
           image: couchbase:rhel-4.5.1
@@ -148,9 +166,9 @@ items:
           - mountPath: "/sidecar"
             name: sidecar
         volumes:
-        - name: data
-          emptyDir: {}
         - name: sidecar
+          emptyDir: {}
+        - name: data
           emptyDir: {}
 - kind: Service
   apiVersion: v1

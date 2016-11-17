@@ -30,25 +30,40 @@ objects:
       port: 8091
     selector:
       name: "${DATABASE_SERVICE_NAME}"
-- apiVersion: v1
-  kind: DeploymentConfig
+- kind: Service
+  apiVersion: v1
   metadata:
     name: "${DATABASE_SERVICE_NAME}-query"
+    annotations:
+      service.alpha.kubernetes.io/tolerate-unready-endpoints: 'true'
   spec:
-    replicas: "${REPLICAS_QUERY}"
+    clusterIP: None
+    ports:
+    - name: cb-admin
+      port: 8091
     selector:
       name: "${DATABASE_SERVICE_NAME}"
       type: query
+- apiVersion: apps/v1alpha1
+  kind: PetSet
+  metadata:
+    name: "${DATABASE_SERVICE_NAME}-query"
+  spec:
+    serviceName: "${DATABASE_SERVICE_NAME}-query"
+    replicas: "${REPLICAS_QUERY}"
     template:
       metadata:
         labels:
           name: "${DATABASE_SERVICE_NAME}"
           app: couchbase
           type: query
+        annotations:
+          pod.alpha.kubernetes.io/initialized: 'true'
       spec:
+        terminationGracePeriodSeconds: 86400
         containers:
         - name: couchbase
-          image: ''
+          image: "${REGISTRY}/openshift/${IMAGE_NAME}"
           imagePullPolicy: Always
           livenessProbe:
             initialDelaySeconds: 30
@@ -156,21 +171,10 @@ objects:
           - mountPath: "/sidecar"
             name: sidecar
         volumes:
-        - name: data
-          emptyDir: {}
         - name: sidecar
           emptyDir: {}
-    triggers:
-    - imageChangeParams:
-        automatic: true
-        containerNames:
-        - couchbase
-        from:
-          kind: ImageStreamTag
-          name: "${IMAGE_NAME}"
-          namespace: "${NAMESPACE}"
-      type: ImageChange
-    - type: ConfigChange
+        - name: data
+          emptyDir: {}
 - kind: Service
   apiVersion: v1
   metadata:

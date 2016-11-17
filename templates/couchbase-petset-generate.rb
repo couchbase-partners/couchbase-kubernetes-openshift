@@ -30,11 +30,12 @@ class CouchbasePetset
       'items' => [
         config_map,
         global_service,
-        deployment('query'),
+        petset_service('query'),
+        petset('query', 'ephemeral'),
         petset_service('data'),
-        petset('data'),
+        petset('data', nil),
         petset_service('index'),
-        petset('index')
+        petset('index', nil)
       ]
     }
   end
@@ -57,11 +58,12 @@ class CouchbasePetset
       [
         config_map,
         global_service,
-        deployment_config('query'),
+        petset_service('query'),
+        petset('query', 'ephemeral'),
         petset_service('data'),
-        petset('data'),
+        petset('data', nil),
         petset_service('index'),
-        petset('index')
+        petset('index', nil)
       ],
       'parameters' => parameters,
       'labels' => labels
@@ -333,7 +335,8 @@ class CouchbasePetset
     }
   end
 
-  def petset(role)
+  def petset(role, storage_type)
+    storage_type = self.storage_type if storage_type.nil?
     petset = {
       'apiVersion' => 'apps/v1alpha1',
       'kind' => 'PetSet',
