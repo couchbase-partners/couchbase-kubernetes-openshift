@@ -76,20 +76,42 @@ objects:
             name: cb-queries
           - containerPort: 8094
             name: cb-search
+          - containerPort: 9100
+            name: cb-int-ind-ad
+          - containerPort: 9101
+            name: cb-int-ind-sc
+          - containerPort: 9102
+            name: cb-int-ind-ht
+          - containerPort: 9103
+            name: cb-int-ind-in
+          - containerPort: 9104
+            name: cb-int-ind-ca
+          - containerPort: 9105
+            name: cb-int-ind-ma
           - containerPort: 9998
-            name: cb-internal
+            name: cb-int-rest
+          - containerPort: 9999
+            name: cb-int-gsi
           - containerPort: 11207
             name: cb-memc-ssl
+          - containerPort: 11209
+            name: cb-int-bu
           - containerPort: 11210
             name: cb-moxi
           - containerPort: 11211
             name: cb-memc
+          - containerPort: 11214
+            name: cb-ssl-xdr1
+          - containerPort: 11215
+            name: cb-ssl-xdr2
           - containerPort: 18091
             name: cb-admin-ssl
           - containerPort: 18092
             name: cb-views-ssl
           - containerPort: 18093
             name: cb-queries-ssl
+          - containerPort: 4369
+            name: empd
           resources:
             requests:
               memory: "${MEMORY_LIMIT_QUERY}"
@@ -210,20 +232,42 @@ objects:
             name: cb-queries
           - containerPort: 8094
             name: cb-search
+          - containerPort: 9100
+            name: cb-int-ind-ad
+          - containerPort: 9101
+            name: cb-int-ind-sc
+          - containerPort: 9102
+            name: cb-int-ind-ht
+          - containerPort: 9103
+            name: cb-int-ind-in
+          - containerPort: 9104
+            name: cb-int-ind-ca
+          - containerPort: 9105
+            name: cb-int-ind-ma
           - containerPort: 9998
-            name: cb-internal
+            name: cb-int-rest
+          - containerPort: 9999
+            name: cb-int-gsi
           - containerPort: 11207
             name: cb-memc-ssl
+          - containerPort: 11209
+            name: cb-int-bu
           - containerPort: 11210
             name: cb-moxi
           - containerPort: 11211
             name: cb-memc
+          - containerPort: 11214
+            name: cb-ssl-xdr1
+          - containerPort: 11215
+            name: cb-ssl-xdr2
           - containerPort: 18091
             name: cb-admin-ssl
           - containerPort: 18092
             name: cb-views-ssl
           - containerPort: 18093
             name: cb-queries-ssl
+          - containerPort: 4369
+            name: empd
           resources:
             requests:
               memory: "${MEMORY_LIMIT_DATA}"
@@ -342,20 +386,42 @@ objects:
             name: cb-queries
           - containerPort: 8094
             name: cb-search
+          - containerPort: 9100
+            name: cb-int-ind-ad
+          - containerPort: 9101
+            name: cb-int-ind-sc
+          - containerPort: 9102
+            name: cb-int-ind-ht
+          - containerPort: 9103
+            name: cb-int-ind-in
+          - containerPort: 9104
+            name: cb-int-ind-ca
+          - containerPort: 9105
+            name: cb-int-ind-ma
           - containerPort: 9998
-            name: cb-internal
+            name: cb-int-rest
+          - containerPort: 9999
+            name: cb-int-gsi
           - containerPort: 11207
             name: cb-memc-ssl
+          - containerPort: 11209
+            name: cb-int-bu
           - containerPort: 11210
             name: cb-moxi
           - containerPort: 11211
             name: cb-memc
+          - containerPort: 11214
+            name: cb-ssl-xdr1
+          - containerPort: 11215
+            name: cb-ssl-xdr2
           - containerPort: 18091
             name: cb-admin-ssl
           - containerPort: 18092
             name: cb-views-ssl
           - containerPort: 18093
             name: cb-queries-ssl
+          - containerPort: 4369
+            name: empd
           resources:
             requests:
               memory: "${MEMORY_LIMIT_INDEX}"

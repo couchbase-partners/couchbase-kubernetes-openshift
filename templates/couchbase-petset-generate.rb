@@ -214,12 +214,44 @@ class CouchbasePetset
           'name' => 'cb-search'
         },
         {
+          'containerPort' => 9100,
+          'name' => 'cb-int-ind-ad'
+        },
+        {
+          'containerPort' => 9101,
+          'name' => 'cb-int-ind-sc'
+        },
+        {
+          'containerPort' => 9102,
+          'name' => 'cb-int-ind-ht'
+        },
+        {
+          'containerPort' => 9103,
+          'name' => 'cb-int-ind-in'
+        },
+        {
+          'containerPort' => 9104,
+          'name' => 'cb-int-ind-ca'
+        },
+        {
+          'containerPort' => 9105,
+          'name' => 'cb-int-ind-ma'
+        },
+        {
           'containerPort' => 9998,
-          'name' => 'cb-internal'
+          'name' => 'cb-int-rest'
+        },
+        {
+          'containerPort' => 9999,
+          'name' => 'cb-int-gsi'
         },
         {
           'containerPort' => 11_207,
           'name' => 'cb-memc-ssl'
+        },
+        {
+          'containerPort' => 11_209,
+          'name' => 'cb-int-bu'
         },
         {
           'containerPort' => 11_210,
@@ -228,6 +260,14 @@ class CouchbasePetset
         {
           'containerPort' => 11_211,
           'name' => 'cb-memc'
+        },
+        {
+          'containerPort' => 11_214,
+          'name' => 'cb-ssl-xdr1'
+        },
+        {
+          'containerPort' => 11_215,
+          'name' => 'cb-ssl-xdr2'
         },
         {
           'containerPort' => 18_091,
@@ -240,6 +280,10 @@ class CouchbasePetset
         {
           'containerPort' => 18_093,
           'name' => 'cb-queries-ssl'
+        },
+        {
+          'containerPort' => 4369,
+          'name' => 'empd'
         }
       ],
       'resources' => {
