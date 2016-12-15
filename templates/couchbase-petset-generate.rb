@@ -1,5 +1,7 @@
 require 'yaml'
+require 'json'
 require 'pathname'
+
 
 class CouchbasePetset
   def initialize(opts = {})
@@ -14,8 +16,36 @@ class CouchbasePetset
     @opts['image_pull_policy'] || 'Always'
   end
 
+  def param_enabled
+    key = 'param_enabled'
+    if @opts.key? key
+      return @opts[key]
+    end
+    true
+  end
+
   def image
-    @opts['image'] || '${REGISTRY}/openshift/${IMAGE_NAME}'
+    @opts['image'] || "#{param('REGISTRY')}/openshift/#{param('IMAGE_NAME')}"
+  end
+
+  def param(name)
+    # os has parameters mode
+    return "${#{name}}" if param_enabled
+
+    # default user/pw
+    return 'admin'     if name == 'COUCHBASE_USER'
+    return 'k8s-rulez' if name == 'COUCHBASE_PASSWORD'
+
+    # get default values
+    parameters.each do |param|
+      next if param['name'] != name
+      break if param['value'].nil?
+
+      return param['value'].to_i if name.match(/^REPLICAS_/) 
+
+      return param['value']
+    end
+    nil
   end
 
   def image_sidecar
@@ -78,24 +108,53 @@ class CouchbasePetset
     end
   end
 
+  def scheduler_anti_affinity
+    {
+      'podAntiAffinity' => {
+        'requiredDuringSchedulingIgnoredDuringExecution' => [{
+          'labelSelector' => {
+            'matchExpressions' => [
+              {
+                'key' => 'app',
+                'operator' => 'In',
+                'values' => ['couchbase']
+              },
+              {
+                'key' => 'type',
+                'operator' => 'In',
+                'values' => %w(data index)
+              },
+              {
+                'key' => 'name',
+                'operator' => 'In',
+                'values' => [param('DATABASE_SERVICE_NAME')]
+              }
+            ]
+          },
+          'topologyKey' => 'kubernetes.io/hostname'
+        }]
+      }
+    }
+  end
+
   def config_map
     {
       'kind' => 'ConfigMap',
       'apiVersion' => 'v1',
-      'metadata' => { 'name' => '${DATABASE_SERVICE_NAME}' },
+      'metadata' => { 'name' => param('DATABASE_SERVICE_NAME')},
       'data' => config_map_data
     }
   end
 
   def config_map_data
     data = {
-      'couchbase.username' => '${COUCHBASE_USER}',
-      'couchbase.password' => '${COUCHBASE_PASSWORD}',
+      'couchbase.username' => param('COUCHBASE_USER'),
+      'couchbase.password' => param('COUCHBASE_PASSWORD'),
       'couchbase.cluster-id' => '',
-      'couchbase.bucket.${COUCHBASE_BUCKET}' => ''
+      "couchbase.bucket.#{param('COUCHBASE_BUCKET')}" => ''
     }
     roles.each do |role|
-      data["couchbase.#{role}.memory-limit"] = "${MEMORY_LIMIT_#{role.upcase}}"
+      data["couchbase.#{role}.memory-limit"] = param("MEMORY_LIMIT_#{role.upcase}")
     end
     data
   end
@@ -104,11 +163,11 @@ class CouchbasePetset
     {
       'kind' => 'Service',
       'apiVersion' => 'v1',
-      'metadata' => { 'name' => '${DATABASE_SERVICE_NAME}' },
+      'metadata' => { 'name' => param('DATABASE_SERVICE_NAME') },
       'spec' =>
       {
         'ports' => [{ 'name' => 'cb-admin', 'port' => 8091 }],
-        'selector' => { 'name' => '${DATABASE_SERVICE_NAME}' }
+        'selector' => { 'name' => param('DATABASE_SERVICE_NAME') }
       }
     }
   end
@@ -184,11 +243,11 @@ class CouchbasePetset
       [
         {
           'name' => 'COUCHBASE_USER',
-          'value' => '${COUCHBASE_USER}'
+          'value' => param('COUCHBASE_USER')
         },
         {
           'name' => 'COUCHBASE_PASSWORD',
-          'value' => '${COUCHBASE_PASSWORD}'
+          'value' => param('COUCHBASE_PASSWORD')
         }
       ],
       'lifecycle' => {
@@ -290,11 +349,11 @@ class CouchbasePetset
       ],
       'resources' => {
         'requests' => {
-          'memory' => "${MEMORY_LIMIT_#{role.upcase}}",
+          'memory' => param("MEMORY_LIMIT_#{role.upcase}"),
           'cpu' => 0.1
         },
         'limits' => {
-          'memory' => "${MEMORY_LIMIT_#{role.upcase}}"
+          'memory' => param("MEMORY_LIMIT_#{role.upcase}"),
         }
       },
       'volumeMounts' =>
@@ -317,7 +376,7 @@ class CouchbasePetset
       'apiVersion' => 'v1',
       'metadata' =>
       {
-        'name' => "${DATABASE_SERVICE_NAME}-#{role}",
+        'name' => "#{param('DATABASE_SERVICE_NAME')}-#{role}",
         'annotations' =>
         {
           'service.alpha.kubernetes.io/tolerate-unready-endpoints' => 'true'
@@ -328,7 +387,7 @@ class CouchbasePetset
         'clusterIP' => 'None',
         'ports' => [{ 'name' => 'cb-admin', 'port' => 8091 }],
         'selector' => {
-          'name' => '${DATABASE_SERVICE_NAME}',
+          'name' => param('DATABASE_SERVICE_NAME'),
           'type' => role
         }
       }
@@ -341,23 +400,26 @@ class CouchbasePetset
       'apiVersion' => 'apps/v1alpha1',
       'kind' => 'PetSet',
       'metadata' => {
-        'name' => "${DATABASE_SERVICE_NAME}-#{role}"
+        'name' => "#{param('DATABASE_SERVICE_NAME')}-#{role}"
       },
       'spec' =>
       {
-        'serviceName' => "${DATABASE_SERVICE_NAME}-#{role}",
-        'replicas' => "${REPLICAS_#{role.upcase}}",
+        'serviceName' => "#{param('DATABASE_SERVICE_NAME')}-#{role}",
+        'replicas' => param("REPLICAS_#{role.upcase}"),
         'template' =>
         {
           'metadata' =>
           {
             'labels' =>
             {
-              'name' => '${DATABASE_SERVICE_NAME}',
+              'name' => param('DATABASE_SERVICE_NAME'),
               'app' => 'couchbase',
               'type' => role
             },
-            'annotations' => { 'pod.alpha.kubernetes.io/initialized' => 'true' }
+            'annotations' => {
+              'pod.alpha.kubernetes.io/initialized' => 'true',
+              'scheduler.alpha.kubernetes.io/affinity' => scheduler_anti_affinity.to_json,
+            }
           },
           'spec' =>
           {
@@ -382,14 +444,14 @@ class CouchbasePetset
         'metadata' => {
           'name' => 'data',
           'annotations' => {
-            'volume.alpha.kubernetes.io/storage-class' => "${STORAGE_CLASS_#{role.upcase}}"
+            'volume.alpha.kubernetes.io/storage-class' => param("STORAGE_CLASS_#{role.upcase}")
           }
         },
         'spec' => {
           'accessModes' => ['ReadWriteOnce'],
           'resources' => {
             'requests' => {
-              'storage' => "${VOLUME_CAPACITY_#{role.upcase}}"
+              'storage' => param("VOLUME_CAPACITY_#{role.upcase}")
             }
           }
         }
@@ -407,14 +469,14 @@ class CouchbasePetset
     {
       'apiVersion' => 'extensions/v1beta1',
       'kind' => 'Deployment',
-      'metadata' => { 'name' => "${DATABASE_SERVICE_NAME}-#{role}" },
+      'metadata' => { 'name' => "#{param('DATABASE_SERVICE_NAME')}-#{role}" },
       'spec' =>
       {
-        'replicas' => "${REPLICAS_#{role.upcase}}",
+        'replicas' => param("REPLICAS_#{role.upcase}"),
         'template' => {
           'metadata' =>
           { 'labels' =>
-            { 'name' => '${DATABASE_SERVICE_NAME}',
+            { 'name' => param('DATABASE_SERVICE_NAME'),
               'app' => 'couchbase',
               'type' => role } },
           'spec' =>
@@ -446,18 +508,20 @@ class CouchbasePetset
     {
       'apiVersion' => 'v1',
       'kind' => 'DeploymentConfig',
-      'metadata' => { 'name' => "${DATABASE_SERVICE_NAME}-#{role}" },
+      'metadata' => {
+        'name' => "#{param('DATABASE_SERVICE_NAME')}-#{role}",
+      },
       'spec' =>
       {
-        'replicas' => "${REPLICAS_#{role.upcase}}",
+        'replicas' => param("REPLICAS_#{role.upcase}"),
         'selector' => {
-          'name' => '${DATABASE_SERVICE_NAME}',
+          'name' => parm('DATABASE_SERVICE_NAME'),
           'type' => role
         },
         'template' =>
         { 'metadata' =>
           { 'labels' =>
-            { 'name' => '${DATABASE_SERVICE_NAME}',
+            { 'name' => parm('DATABASE_SERVICE_NAME'),
               'app' => 'couchbase',
               'type' => role } },
           'spec' =>
@@ -484,8 +548,8 @@ class CouchbasePetset
               'containerNames' => ['couchbase'],
               'from' => {
                 'kind' => 'ImageStreamTag',
-                'name' => '${IMAGE_NAME}',
-                'namespace' => '${NAMESPACE}'
+                'name' => param('IMAGE_NAME'),
+                'namespace' => param('NAMESPACE')
               }
             },
             'type' => 'ImageChange'
@@ -609,24 +673,11 @@ def write_k8s_templates
     c = CouchbasePetset.new(
       'storage_type' => storage_type,
       'image_pull_policy' => 'IfNotPresent',
-      'image' => 'couchbase:rhel-4.5.1'
+      'image' => 'couchbase/server:enterprise-4.5.1',
+      'param_enabled' => false,
     )
     File.open(dir.join("couchbase-petset-k8s-#{storage_type}.yaml"), 'w') do |file|
-      data = c.k8s_template.to_yaml
-      c.parameters.each do |param|
-        value = param['value']
-        value = 'admin' if param['name'] == 'COUCHBASE_USER'
-        value = 'k8s-rulez' if param['name'] == 'COUCHBASE_PASSWORD'
-
-        next if value.nil?
-
-        needle = Regexp.escape("${#{param['name']}}")
-
-        data = data.gsub(/"#{needle}"/, value)
-        data = data.gsub(/'#{needle}'/, value)
-        data = data.gsub(/#{needle}/, value)
-      end
-      file.write data
+      file.write c.k8s_template.to_yaml
     end
   end
 end

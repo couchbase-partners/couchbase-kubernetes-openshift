@@ -28,7 +28,7 @@ items:
 - kind: Service
   apiVersion: v1
   metadata:
-    name: "couchbase-query"
+    name: couchbase-query
     annotations:
       service.alpha.kubernetes.io/tolerate-unready-endpoints: 'true'
   spec:
@@ -42,9 +42,9 @@ items:
 - apiVersion: apps/v1alpha1
   kind: PetSet
   metadata:
-    name: "couchbase-query"
+    name: couchbase-query
   spec:
-    serviceName: "couchbase-query"
+    serviceName: couchbase-query
     replicas: 3
     template:
       metadata:
@@ -54,11 +54,12 @@ items:
           type: query
         annotations:
           pod.alpha.kubernetes.io/initialized: 'true'
+          scheduler.alpha.kubernetes.io/affinity: '{"podAntiAffinity":{"requiredDuringSchedulingIgnoredDuringExecution":[{"labelSelector":{"matchExpressions":[{"key":"app","operator":"In","values":["couchbase"]},{"key":"type","operator":"In","values":["data","index"]},{"key":"name","operator":"In","values":["couchbase"]}]},"topologyKey":"kubernetes.io/hostname"}]}}'
       spec:
         terminationGracePeriodSeconds: 86400
         containers:
         - name: couchbase
-          image: couchbase:rhel-4.5.1
+          image: couchbase/server:enterprise-4.5.1
           imagePullPolicy: IfNotPresent
           livenessProbe:
             initialDelaySeconds: 30
@@ -173,7 +174,7 @@ items:
 - kind: Service
   apiVersion: v1
   metadata:
-    name: "couchbase-data"
+    name: couchbase-data
     annotations:
       service.alpha.kubernetes.io/tolerate-unready-endpoints: 'true'
   spec:
@@ -187,9 +188,9 @@ items:
 - apiVersion: apps/v1alpha1
   kind: PetSet
   metadata:
-    name: "couchbase-data"
+    name: couchbase-data
   spec:
-    serviceName: "couchbase-data"
+    serviceName: couchbase-data
     replicas: 3
     template:
       metadata:
@@ -199,11 +200,12 @@ items:
           type: data
         annotations:
           pod.alpha.kubernetes.io/initialized: 'true'
+          scheduler.alpha.kubernetes.io/affinity: '{"podAntiAffinity":{"requiredDuringSchedulingIgnoredDuringExecution":[{"labelSelector":{"matchExpressions":[{"key":"app","operator":"In","values":["couchbase"]},{"key":"type","operator":"In","values":["data","index"]},{"key":"name","operator":"In","values":["couchbase"]}]},"topologyKey":"kubernetes.io/hostname"}]}}'
       spec:
         terminationGracePeriodSeconds: 86400
         containers:
         - name: couchbase
-          image: couchbase:rhel-4.5.1
+          image: couchbase/server:enterprise-4.5.1
           imagePullPolicy: IfNotPresent
           livenessProbe:
             initialDelaySeconds: 30
@@ -327,7 +329,7 @@ items:
 - kind: Service
   apiVersion: v1
   metadata:
-    name: "couchbase-index"
+    name: couchbase-index
     annotations:
       service.alpha.kubernetes.io/tolerate-unready-endpoints: 'true'
   spec:
@@ -341,9 +343,9 @@ items:
 - apiVersion: apps/v1alpha1
   kind: PetSet
   metadata:
-    name: "couchbase-index"
+    name: couchbase-index
   spec:
-    serviceName: "couchbase-index"
+    serviceName: couchbase-index
     replicas: 3
     template:
       metadata:
@@ -353,11 +355,12 @@ items:
           type: index
         annotations:
           pod.alpha.kubernetes.io/initialized: 'true'
+          scheduler.alpha.kubernetes.io/affinity: '{"podAntiAffinity":{"requiredDuringSchedulingIgnoredDuringExecution":[{"labelSelector":{"matchExpressions":[{"key":"app","operator":"In","values":["couchbase"]},{"key":"type","operator":"In","values":["data","index"]},{"key":"name","operator":"In","values":["couchbase"]}]},"topologyKey":"kubernetes.io/hostname"}]}}'
       spec:
         terminationGracePeriodSeconds: 86400
         containers:
         - name: couchbase
-          image: couchbase:rhel-4.5.1
+          image: couchbase/server:enterprise-4.5.1
           imagePullPolicy: IfNotPresent
           livenessProbe:
             initialDelaySeconds: 30
