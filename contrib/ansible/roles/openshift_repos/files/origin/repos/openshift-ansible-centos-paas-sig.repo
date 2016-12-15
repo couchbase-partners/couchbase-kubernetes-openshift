@@ -5,6 +5,11 @@ enabled=1
 gpgcheck=1
 gpgkey=file:///etc/pki/rpm-gpg/openshift-ansible-CentOS-SIG-PaaS
 
+[origin-jetstack]
+name = OpenShift Origin Release from Jetstack
+baseurl = https://storage.googleapis.com/jetstack-openshift-builds/os-build/os-rpms
+gpgcheck = 0
+
 [centos-openshift-origin-testing]
 name=CentOS OpenShift Origin Testing
 baseurl=http://buildlogs.centos.org/centos/7/paas/x86_64/openshift-origin/
