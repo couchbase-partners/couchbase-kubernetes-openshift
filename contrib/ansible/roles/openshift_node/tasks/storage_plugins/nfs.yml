@@ -24,3 +24,9 @@
   failed_when: false
   changed_when: false
 
+- name: Set seboolean to allow nfs storage plugin access from containers(sandbox) (RHEL)
+  seboolean:
+    name: virt_sandbox_use_nfs
+    state: yes
+    persistent: yes
+  when: ansible_distribution != "Fedora" and ansible_selinux and ansible_selinux.status == "enabled" and virt_sandbox_use_nfs_output.rc == 0
