@@ -29,9 +29,6 @@ ssh_dns_patch: master_ip
 	echo "yum install -y bzip2 && curl -sL -o /tmp/openshift.bz2 https://storage.googleapis.com/jetstack-openshift-builds/openshift-1.3.3-dns-unready-patched.bz2 && bunzip2 /tmp/openshift.bz2 && chmod +x /tmp/openshift && mv /tmp/openshift /usr/bin/openshift && systemctl restart origin-master" | $(SSH) centos@$(MASTER_IP) sudo bash
 
 ssh_templates: master_ip generate_templates
-	## only needed for the root image
-	#$(SSH) centos@$(MASTER_IP) sudo oc patch scc restricted -p "'{\"runAsUser\":{\"type\": \"RunAsAny\"}}'"
-	#$(SSH) centos@$(MASTER_IP) sudo oc patch scc restricted -p "'{\"requiredDropCapabilities\":[\"KILL\", \"MKNOD\", \"SYS_CHROOT\"]}'"
 	cat templates/couchbase-single-node-persistent.yaml | sed "s/###B64_INIT_COUCHBASE###/$(shell base64 -w 0 templates/init-couchbase.sh)/g" | $(SSH) centos@$(MASTER_IP) sudo oc apply --namespace=openshift -f -
 	$(eval REGISTRY_IP = $(shell $(SSH) centos@$(MASTER_IP) sudo kubectl --namespace default get svc docker-registry -o jsonpath={.spec.clusterIP}))
 	cat templates/couchbase-petset-openshift-persistent.yaml | sed "s/###REGISTRY_IP###/$(REGISTRY_IP)/g" | $(SSH) centos@$(MASTER_IP) sudo oc apply --namespace=openshift -f -
