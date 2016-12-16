@@ -9,6 +9,10 @@
     role: "{{ item.role }}"
     local_facts: "{{ item.local_facts }}"
   with_items:
+  # Reset node labels to an empty dictionary.
+  - role: node
+    local_facts:
+      labels: {}
   - role: node
     local_facts:
       annotations: "{{ openshift_node_annotations | default(none) }}"
@@ -42,20 +46,6 @@
   action: "{{ ansible_pkg_mgr }} name={{ openshift.common.service_type }}-sdn-ovs{{ openshift_pkg_version | oo_image_tag_to_rpm_version(include_dash=True) }} state=present"
   when: openshift.common.use_openshift_sdn and not openshift.common.is_containerized | bool
 
-- name: Pull node image
-  command: >
-    docker pull {{ openshift.node.node_image }}:{{ openshift_image_tag }}
-  register: pull_result
-  changed_when: "'Downloaded newer image' in pull_result.stdout"
-  when: openshift.common.is_containerized | bool
-
-- name: Pull OpenVSwitch image
-  command: >
-    docker pull {{ openshift.node.ovs_image }}:{{ openshift_image_tag }}
-  register: pull_result
-  changed_when: "'Downloaded newer image' in pull_result.stdout"
-  when: openshift.common.is_containerized | bool and openshift.common.use_openshift_sdn | bool
-
 - name: Install the systemd units
   include: systemd_units.yml
 
@@ -76,7 +66,7 @@
 # TODO: add the validate parameter when there is a validation command to run
 - name: Create the Node config
   template:
-    dest: "{{ openshift_node_config_file }}"
+    dest: "{{ openshift.common.config_base }}/node/node-config.yaml"
     src: node.yaml.v1.j2
     backup: true
     owner: root
@@ -96,6 +86,7 @@
       line: "AWS_ACCESS_KEY_ID={{ openshift_cloudprovider_aws_access_key | default('') }}"
     - regex: '^AWS_SECRET_ACCESS_KEY='
       line: "AWS_SECRET_ACCESS_KEY={{ openshift_cloudprovider_aws_secret_key | default('') }}"
+  no_log: True
   when: "openshift_cloudprovider_kind is defined and openshift_cloudprovider_kind == 'aws' and openshift_cloudprovider_aws_access_key is defined and openshift_cloudprovider_aws_secret_key is defined"
   notify:
   - restart node
@@ -112,6 +103,8 @@
 
 - name: NFS storage plugin configuration
   include: storage_plugins/nfs.yml
+  tags:
+    - nfs
 
 - name: GlusterFS storage plugin configuration
   include: storage_plugins/glusterfs.yml
@@ -152,17 +145,9 @@
 - name: Start and enable node
   service: name={{ openshift.common.service_type }}-node enabled=yes state=started
   register: node_start_result
-  ignore_errors: yes
-
-- name: Wait 30 seconds for docker initialization whenever node has failed
-  pause:
-    seconds: 30
-  when: node_start_result | failed
-
-- name: Start and enable node again
-  service: name={{ openshift.common.service_type }}-node enabled=yes state=started
-  register: node_start_result
-  when: node_start_result | failed
+  until: not node_start_result | failed
+  retries: 1
+  delay: 30
 
 - set_fact:
     node_service_status_changed: "{{ node_start_result | changed }}"

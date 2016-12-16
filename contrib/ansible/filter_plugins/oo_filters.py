@@ -234,9 +234,9 @@ class FilterModule(object):
            arrange them as a string 'key=value key=value'
         """
         if not isinstance(data, dict):
-            raise errors.AnsibleFilterError("|failed expects first param is a dict")
+            raise errors.AnsibleFilterError("|failed expects first param is a dict [oo_combine_dict]. Got %s. Type: %s" % (str(data), str(type(data))))
 
-        return out_joiner.join([in_joiner.join([k, v]) for k, v in data.items()])
+        return out_joiner.join([in_joiner.join([k, str(v)]) for k, v in data.items()])
 
     @staticmethod
     def oo_ami_selector(data, image_name):
@@ -286,7 +286,7 @@ class FilterModule(object):
                 }
         """
         if not isinstance(data, dict):
-            raise errors.AnsibleFilterError("|failed expects first param is a dict")
+            raise errors.AnsibleFilterError("|failed expects first param is a dict [oo_ec2_volume_def]. Got %s. Type: %s" % (str(data), str(type(data))))
         if host_type not in ['master', 'node', 'etcd']:
             raise errors.AnsibleFilterError("|failed expects etcd, master or node"
                                             " as the host type")
@@ -889,11 +889,32 @@ class FilterModule(object):
                                           'servers': FilterModule.oo_haproxy_backend_masters(servers_hostvars, nuage_rest_port)})
         return loadbalancer_backends
 
+    @staticmethod
+    def oo_chomp_commit_offset(version):
+        """Chomp any "+git.foo" commit offset string from the given `version`
+        and return the modified version string.
+
+    Ex:
+    - chomp_commit_offset(None)                 => None
+    - chomp_commit_offset(1337)                 => "1337"
+    - chomp_commit_offset("v3.4.0.15+git.derp") => "v3.4.0.15"
+    - chomp_commit_offset("v3.4.0.15")          => "v3.4.0.15"
+    - chomp_commit_offset("v1.3.0+52492b4")     => "v1.3.0"
+        """
+        if version is None:
+            return version
+        else:
+            # Stringify, just in case it's a Number type. Split by '+' and
+            # return the first split. No concerns about strings without a
+            # '+', .split() returns an array of the original string.
+            return str(version).split('+')[0]
+
     def filters(self):
         """ returns a mapping of filters to methods """
         return {
             "oo_select_keys": self.oo_select_keys,
             "oo_select_keys_from_list": self.oo_select_keys_from_list,
+            "oo_chomp_commit_offset": self.oo_chomp_commit_offset,
             "oo_collect": self.oo_collect,
             "oo_flatten": self.oo_flatten,
             "oo_pdb": self.oo_pdb,

@@ -120,6 +120,10 @@ class Host(object):
     def is_storage(self):
         return 'storage' in self.roles
 
+    def is_etcd(self):
+        """ Does this host have the etcd role """
+        return 'etcd' in self.roles
+
     def is_etcd_member(self, all_hosts):
         """ Will this host be a member of a standalone etcd cluster. """
         if not self.is_master():
@@ -436,3 +440,11 @@ class OOConfig(object):
             if host.connect_to == name:
                 return host
         return None
+
+    def get_host_roles_set(self):
+        roles_set = set()
+        for host in self.deployment.hosts:
+            for role in host.roles:
+                roles_set.add(role)
+
+        return roles_set

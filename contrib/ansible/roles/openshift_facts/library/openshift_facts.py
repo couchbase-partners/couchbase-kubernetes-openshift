@@ -7,7 +7,13 @@
 
 """Ansible module for retrieving and setting openshift related facts"""
 
-import ConfigParser
+try:
+    # python2
+    import ConfigParser
+except ImportError:
+    # python3
+    import configparser as ConfigParser
+
 import copy
 import io
 import os
@@ -55,11 +61,10 @@ def migrate_docker_facts(facts):
                     facts['docker'][param] = facts[role].pop(old_param)
 
     if 'node' in facts and 'portal_net' in facts['node']:
-        facts['docker']['hosted_registry_insecure'] = True
         facts['docker']['hosted_registry_network'] = facts['node'].pop('portal_net')
 
     # log_options was originally meant to be a comma separated string, but
-    # we now prefer an actual list, with backward compatability:
+    # we now prefer an actual list, with backward compatibility:
     if 'log_options' in facts['docker'] and \
             isinstance(facts['docker']['log_options'], basestring):
         facts['docker']['log_options'] = facts['docker']['log_options'].split(",")
@@ -97,14 +102,6 @@ def migrate_node_facts(facts):
                     facts['node'][param] = facts[role].pop(param)
     return facts
 
-def migrate_local_facts(facts):
-    """ Apply migrations of local facts """
-    migrated_facts = copy.deepcopy(facts)
-    migrated_facts = migrate_docker_facts(migrated_facts)
-    migrated_facts = migrate_common_facts(migrated_facts)
-    migrated_facts = migrate_node_facts(migrated_facts)
-    migrated_facts = migrate_hosted_facts(migrated_facts)
-    return migrated_facts
 
 def migrate_hosted_facts(facts):
     """ Apply migrations for master facts """
@@ -122,6 +119,30 @@ def migrate_hosted_facts(facts):
                 facts['hosted']['registry'] = {}
             facts['hosted']['registry']['selector'] = facts['master'].pop('registry_selector')
     return facts
+
+def migrate_admission_plugin_facts(facts):
+    if 'master' in facts:
+        if 'kube_admission_plugin_config' in facts['master']:
+            if 'admission_plugin_config' not in facts['master']:
+                facts['master']['admission_plugin_config'] = dict()
+            # Merge existing kube_admission_plugin_config with admission_plugin_config.
+            facts['master']['admission_plugin_config'] = merge_facts(facts['master']['admission_plugin_config'],
+                                                                     facts['master']['kube_admission_plugin_config'],
+                                                                     additive_facts_to_overwrite=[],
+                                                                     protected_facts_to_overwrite=[])
+            # Remove kube_admission_plugin_config fact
+            facts['master'].pop('kube_admission_plugin_config', None)
+    return facts
+
+def migrate_local_facts(facts):
+    """ Apply migrations of local facts """
+    migrated_facts = copy.deepcopy(facts)
+    migrated_facts = migrate_docker_facts(migrated_facts)
+    migrated_facts = migrate_common_facts(migrated_facts)
+    migrated_facts = migrate_node_facts(migrated_facts)
+    migrated_facts = migrate_hosted_facts(migrated_facts)
+    migrated_facts = migrate_admission_plugin_facts(migrated_facts)
+    return migrated_facts
 
 def first_ip(network):
     """ Return the first IPv4 address in network
@@ -149,7 +170,6 @@ def hostname_valid(hostname):
     if (not hostname or
             hostname.startswith('localhost') or
             hostname.endswith('localdomain') or
-            hostname.endswith('novalocal') or
             len(hostname.split('.')) < 2):
         return False
 
@@ -203,9 +223,9 @@ def query_metadata(metadata_url, headers=None, expect_json=False):
     if info['status'] != 200:
         raise OpenShiftFactsMetadataUnavailableError("Metadata unavailable")
     if expect_json:
-        return module.from_json(result.read())
+        return module.from_json(to_native(result.read()))
     else:
-        return [line.strip() for line in result.readlines()]
+        return [to_native(line.strip()) for line in result.readlines()]
 
 
 def walk_metadata(metadata_url, headers=None, expect_json=False):
@@ -313,7 +333,7 @@ def normalize_aws_facts(metadata, facts):
     ):
         int_info = dict()
         var_map = {'ips': 'local-ipv4s', 'public_ips': 'public-ipv4s'}
-        for ips_var, int_var in var_map.iteritems():
+        for ips_var, int_var in iteritems(var_map):
             ips = interface.get(int_var)
             if isinstance(ips, basestring):
                 int_info[ips_var] = [ips]
@@ -498,8 +518,8 @@ def set_dnsmasq_facts_if_unset(facts):
     """
 
     if 'common' in facts:
-        facts['common']['use_dnsmasq'] = bool('use_dnsmasq' not in facts['common'] and
-                                              safe_get_bool(facts['common']['version_gte_3_2_or_1_2']))
+        if 'use_dnsmasq' not in facts['common']:
+            facts['common']['use_dnsmasq'] = bool(safe_get_bool(facts['common']['version_gte_3_2_or_1_2']))
         if 'master' in facts and 'dns_port' not in facts['master']:
             if safe_get_bool(facts['common']['use_dnsmasq']):
                 facts['master']['dns_port'] = 8053
@@ -822,31 +842,39 @@ def set_version_facts_if_unset(facts):
     """
     if 'common' in facts:
         deployment_type = facts['common']['deployment_type']
-        version = get_openshift_version(facts)
-        if version:
-            facts['common']['version'] = version
+        openshift_version = get_openshift_version(facts)
+        if openshift_version:
+            version = LooseVersion(openshift_version)
+            facts['common']['version'] = openshift_version
+            facts['common']['short_version'] = '.'.join([str(x) for x in version.version[0:2]])
             if deployment_type == 'origin':
-                version_gte_3_1_or_1_1 = LooseVersion(version) >= LooseVersion('1.1.0')
-                version_gte_3_1_1_or_1_1_1 = LooseVersion(version) >= LooseVersion('1.1.1')
-                version_gte_3_2_or_1_2 = LooseVersion(version) >= LooseVersion('1.2.0')
-                version_gte_3_3_or_1_3 = LooseVersion(version) >= LooseVersion('1.3.0')
+                version_gte_3_1_or_1_1 = version >= LooseVersion('1.1.0')
+                version_gte_3_1_1_or_1_1_1 = version >= LooseVersion('1.1.1')
+                version_gte_3_2_or_1_2 = version >= LooseVersion('1.2.0')
+                version_gte_3_3_or_1_3 = version >= LooseVersion('1.3.0')
+                version_gte_3_4_or_1_4 = version >= LooseVersion('1.4.0')
             else:
-                version_gte_3_1_or_1_1 = LooseVersion(version) >= LooseVersion('3.0.2.905')
-                version_gte_3_1_1_or_1_1_1 = LooseVersion(version) >= LooseVersion('3.1.1')
-                version_gte_3_2_or_1_2 = LooseVersion(version) >= LooseVersion('3.1.1.901')
-                version_gte_3_3_or_1_3 = LooseVersion(version) >= LooseVersion('3.3.0')
+                version_gte_3_1_or_1_1 = version >= LooseVersion('3.0.2.905')
+                version_gte_3_1_1_or_1_1_1 = version >= LooseVersion('3.1.1')
+                version_gte_3_2_or_1_2 = version >= LooseVersion('3.1.1.901')
+                version_gte_3_3_or_1_3 = version >= LooseVersion('3.3.0')
+                version_gte_3_4_or_1_4 = version >= LooseVersion('3.4.0')
         else:
             version_gte_3_1_or_1_1 = True
             version_gte_3_1_1_or_1_1_1 = True
             version_gte_3_2_or_1_2 = True
-            version_gte_3_3_or_1_3 = False
+            version_gte_3_3_or_1_3 = True
+            version_gte_3_4_or_1_4 = False
         facts['common']['version_gte_3_1_or_1_1'] = version_gte_3_1_or_1_1
         facts['common']['version_gte_3_1_1_or_1_1_1'] = version_gte_3_1_1_or_1_1_1
         facts['common']['version_gte_3_2_or_1_2'] = version_gte_3_2_or_1_2
         facts['common']['version_gte_3_3_or_1_3'] = version_gte_3_3_or_1_3
+        facts['common']['version_gte_3_4_or_1_4'] = version_gte_3_4_or_1_4
 
 
-        if version_gte_3_3_or_1_3:
+        if version_gte_3_4_or_1_4:
+            examples_content_version = 'v1.4'
+        elif version_gte_3_3_or_1_3:
             examples_content_version = 'v1.3'
         elif version_gte_3_2_or_1_2:
             examples_content_version = 'v1.2'
@@ -899,10 +927,29 @@ def set_sdn_facts_if_unset(facts, system_facts):
             facts['common']['sdn_network_plugin_name'] = plugin
 
     if 'master' in facts:
+        # set defaults for sdn_cluster_network_cidr and sdn_host_subnet_length
+        # these might be overridden if they exist in the master config file
+        sdn_cluster_network_cidr = '10.128.0.0/14'
+        sdn_host_subnet_length = '9'
+
+        master_cfg_path = os.path.join(facts['common']['config_base'],
+                                       'master/master-config.yaml')
+        if os.path.isfile(master_cfg_path):
+            with open(master_cfg_path, 'r') as master_cfg_f:
+                config = yaml.safe_load(master_cfg_f.read())
+
+            if 'networkConfig' in config:
+                if 'clusterNetworkCIDR' in config['networkConfig']:
+                    sdn_cluster_network_cidr = \
+                        config['networkConfig']['clusterNetworkCIDR']
+                if 'hostSubnetLength' in config['networkConfig']:
+                    sdn_host_subnet_length = \
+                        config['networkConfig']['hostSubnetLength']
+
         if 'sdn_cluster_network_cidr' not in facts['master']:
-            facts['master']['sdn_cluster_network_cidr'] = '10.1.0.0/16'
+            facts['master']['sdn_cluster_network_cidr'] = sdn_cluster_network_cidr
         if 'sdn_host_subnet_length' not in facts['master']:
-            facts['master']['sdn_host_subnet_length'] = '8'
+            facts['master']['sdn_host_subnet_length'] = sdn_host_subnet_length
 
     if 'node' in facts and 'sdn_mtu' not in facts['node']:
         node_ip = facts['common']['ip']
@@ -910,21 +957,13 @@ def set_sdn_facts_if_unset(facts, system_facts):
         # default MTU if interface MTU cannot be detected
         facts['node']['sdn_mtu'] = '1450'
 
-        for val in system_facts.itervalues():
+        for val in itervalues(system_facts):
             if isinstance(val, dict) and 'mtu' in val:
                 mtu = val['mtu']
 
                 if 'ipv4' in val and val['ipv4'].get('address') == node_ip:
                     facts['node']['sdn_mtu'] = str(mtu - 50)
 
-    return facts
-
-def set_nodename(facts):
-    if 'node' in facts and 'common' in facts:
-        if 'cloudprovider' in facts and facts['cloudprovider']['kind'] == 'openstack':
-            facts['node']['nodename'] = facts['provider']['metadata']['hostname'].replace('.novalocal', '')
-        else:
-            facts['node']['nodename'] = facts['common']['hostname'].lower()
     return facts
 
 def migrate_oauth_template_facts(facts):
@@ -1032,12 +1071,23 @@ def get_current_config(facts):
     return current_config
 
 def build_kubelet_args(facts):
-    """ Build node kubelet_args """
-    cloud_cfg_path = os.path.join(facts['common']['config_base'],
-                                  'cloudprovider')
+    """Build node kubelet_args
+
+In the node-config.yaml file, kubeletArgument sub-keys have their
+values provided as a list. Hence the gratuitous use of ['foo'] below.
+    """
+    cloud_cfg_path = os.path.join(
+        facts['common']['config_base'],
+        'cloudprovider')
+
+    # We only have to do this stuff on hosts that are nodes
     if 'node' in facts:
+        # Any changes to the kubeletArguments parameter are stored
+        # here first.
         kubelet_args = {}
+
         if 'cloudprovider' in facts:
+            # EVERY cloud is special <3
             if 'kind' in facts['cloudprovider']:
                 if facts['cloudprovider']['kind'] == 'aws':
                     kubelet_args['cloud-provider'] = ['aws']
@@ -1047,6 +1097,29 @@ def build_kubelet_args(facts):
                     kubelet_args['cloud-config'] = [cloud_cfg_path + '/openstack.conf']
                 if facts['cloudprovider']['kind'] == 'gce':
                     kubelet_args['cloud-provider'] = ['gce']
+                    kubelet_args['cloud-config'] = [cloud_cfg_path + '/gce.conf']
+
+        # Automatically add node-labels to the kubeletArguments
+        # parameter. See BZ1359848 for additional details.
+        #
+        # Ref: https://bugzilla.redhat.com/show_bug.cgi?id=1359848
+        if 'labels' in facts['node'] and isinstance(facts['node']['labels'], dict):
+            # tl;dr: os_node_labels="{'foo': 'bar', 'a': 'b'}" turns
+            # into ['foo=bar', 'a=b']
+            #
+            # On the openshift_node_labels inventory variable we loop
+            # over each key-value tuple (from .items()) and join the
+            # key to the value with an '=' character, this produces a
+            # list.
+            #
+            # map() seems to be returning an itertools.imap object
+            # instead of a list. We cast it to a list ourselves.
+            labels_str = list(map(lambda x: '='.join(x), facts['node']['labels'].items()))
+            if labels_str != '':
+                kubelet_args['node-labels'] = labels_str
+
+        # If we've added items to the kubelet_args dict then we need
+        # to merge the new items back into the main facts object.
         if kubelet_args != {}:
             facts = merge_facts({'node': {'kubelet_args': kubelet_args}}, facts, [], [])
     return facts
@@ -1067,6 +1140,7 @@ def build_controller_args(facts):
                     controller_args['cloud-config'] = [cloud_cfg_path + '/openstack.conf']
                 if facts['cloudprovider']['kind'] == 'gce':
                     controller_args['cloud-provider'] = ['gce']
+                    controller_args['cloud-config'] = [cloud_cfg_path + '/gce.conf']
         if controller_args != {}:
             facts = merge_facts({'master': {'controller_args': controller_args}}, facts, [], [])
     return facts
@@ -1087,6 +1161,7 @@ def build_api_server_args(facts):
                     api_server_args['cloud-config'] = [cloud_cfg_path + '/openstack.conf']
                 if facts['cloudprovider']['kind'] == 'gce':
                     api_server_args['cloud-provider'] = ['gce']
+                    api_server_args['cloud-config'] = [cloud_cfg_path + '/gce.conf']
         if api_server_args != {}:
             facts = merge_facts({'master': {'api_server_args': api_server_args}}, facts, [], [])
     return facts
@@ -1135,6 +1210,24 @@ def get_docker_version_info():
             }
     return result
 
+def get_hosted_registry_insecure():
+    """ Parses OPTIONS from /etc/sysconfig/docker to determine if the
+        registry is currently insecure.
+    """
+    hosted_registry_insecure = None
+    if os.path.exists('/etc/sysconfig/docker'):
+        try:
+            ini_str = unicode('[root]\n' + open('/etc/sysconfig/docker', 'r').read(), 'utf-8')
+            ini_fp = io.StringIO(ini_str)
+            config = ConfigParser.RawConfigParser()
+            config.readfp(ini_fp)
+            options = config.get('root', 'OPTIONS')
+            if 'insecure-registry' in options:
+                hosted_registry_insecure = True
+        except:
+            pass
+    return hosted_registry_insecure
+
 def get_openshift_version(facts):
     """ Get current version of openshift on the host.
 
@@ -1151,9 +1244,10 @@ def get_openshift_version(facts):
 
     # No need to run this method repeatedly on a system if we already know the
     # version
+    # TODO: We need a way to force reload this after upgrading bits.
     if 'common' in facts:
         if 'version' in facts['common'] and facts['common']['version'] is not None:
-            return facts['common']['version']
+            return chomp_commit_offset(facts['common']['version'])
 
     if os.path.isfile('/usr/bin/openshift'):
         _, output, _ = module.run_command(['/usr/bin/openshift', 'version'])
@@ -1168,7 +1262,27 @@ def get_openshift_version(facts):
         _, output, _ = module.run_command(['/usr/local/bin/openshift', 'version'])
         version = parse_openshift_version(output)
 
-    return version
+    return chomp_commit_offset(version)
+
+
+def chomp_commit_offset(version):
+    """Chomp any "+git.foo" commit offset string from the given `version`
+    and return the modified version string.
+
+Ex:
+- chomp_commit_offset(None)                 => None
+- chomp_commit_offset(1337)                 => "1337"
+- chomp_commit_offset("v3.4.0.15+git.derp") => "v3.4.0.15"
+- chomp_commit_offset("v3.4.0.15")          => "v3.4.0.15"
+- chomp_commit_offset("v1.3.0+52492b4")     => "v1.3.0"
+    """
+    if version is None:
+        return version
+    else:
+        # Stringify, just in case it's a Number type. Split by '+' and
+        # return the first split. No concerns about strings without a
+        # '+', .split() returns an array of the original string.
+        return str(version).split('+')[0]
 
 
 def get_container_openshift_version(facts):
@@ -1229,7 +1343,7 @@ def apply_provider_facts(facts, provider_facts):
 
         facts['common'][h_var] = choose_hostname(
             [provider_facts['network'].get(h_var)],
-            facts['common'][h_var]
+            facts['common'][ip_var]
         )
 
     facts['provider'] = provider_facts
@@ -1263,7 +1377,7 @@ def merge_facts(orig, new, additive_facts_to_overwrite, protected_facts_to_overw
                             'image_policy_config']
 
     facts = dict()
-    for key, value in orig.iteritems():
+    for key, value in iteritems(orig):
         # Key exists in both old and new facts.
         if key in new:
             if key in inventory_json_facts:
@@ -1306,7 +1420,7 @@ def merge_facts(orig, new, additive_facts_to_overwrite, protected_facts_to_overw
             elif key in protected_facts and key not in [x.split('.')[-1] for x in protected_facts_to_overwrite]:
                 # The master count (int) can only increase unless it
                 # has been passed as a protected fact to overwrite.
-                if key == 'master_count':
+                if key == 'master_count' and new[key] is not None and new[key] is not '':
                     if int(value) <= int(new[key]):
                         facts[key] = copy.deepcopy(new[key])
                     else:
@@ -1344,8 +1458,11 @@ def save_local_facts(filename, facts):
     """
     try:
         fact_dir = os.path.dirname(filename)
-        if not os.path.exists(fact_dir):
-            os.makedirs(fact_dir)
+        try:
+            os.makedirs(fact_dir)  # try to make the directory
+        except OSError as exception:
+            if exception.errno != errno.EEXIST:  # but it is okay if it is already there
+                raise  # pass any other exceptions up the chain
         with open(filename, 'w') as fact_file:
             fact_file.write(module.jsonify(facts))
         os.chmod(filename, 0o600)
@@ -1434,8 +1551,8 @@ def set_proxy_facts(facts):
                 safe_get_bool(common['generate_no_proxy_hosts']):
                 if 'no_proxy_internal_hostnames' in common:
                     common['no_proxy'].extend(common['no_proxy_internal_hostnames'].split(','))
-                common['no_proxy'].append('.' + common['dns_domain'])
-            # We always add ourselves no matter what
+            # We always add local dns domain and ourselves no matter what
+            common['no_proxy'].append('.' + common['dns_domain'])
             common['no_proxy'].append(common['hostname'])
             common['no_proxy'] = sort_unique(common['no_proxy'])
         facts['common'] = common
@@ -1457,14 +1574,14 @@ def set_proxy_facts(facts):
             builddefaults['git_http_proxy'] = builddefaults['http_proxy']
         if 'git_https_proxy' not in builddefaults and 'https_proxy' in builddefaults:
             builddefaults['git_https_proxy'] = builddefaults['https_proxy']
-        # If we're actually defining a proxy config then create kube_admission_plugin_config
+        # If we're actually defining a proxy config then create admission_plugin_config
         # if it doesn't exist, then merge builddefaults[config] structure
-        # into kube_admission_plugin_config
-        if 'kube_admission_plugin_config' not in facts['master']:
-            facts['master']['kube_admission_plugin_config'] = dict()
+        # into admission_plugin_config
         if 'config' in builddefaults and ('http_proxy' in builddefaults or \
                 'https_proxy' in builddefaults):
-            facts['master']['kube_admission_plugin_config'].update(builddefaults['config'])
+            if 'admission_plugin_config' not in facts['master']:
+                facts['master']['admission_plugin_config'] = dict()
+            facts['master']['admission_plugin_config'].update(builddefaults['config'])
         facts['builddefaults'] = builddefaults
 
     return facts
@@ -1695,8 +1812,8 @@ class OpenShiftFacts(object):
         facts = set_node_schedulability(facts)
         facts = set_selectors(facts)
         facts = set_identity_providers_if_unset(facts)
-        facts = set_sdn_facts_if_unset(facts, self.system_facts)
         facts = set_deployment_facts_if_unset(facts)
+        facts = set_sdn_facts_if_unset(facts, self.system_facts)
         facts = set_container_facts_if_unset(facts)
         facts = build_kubelet_args(facts)
         facts = build_controller_args(facts)
@@ -1709,7 +1826,6 @@ class OpenShiftFacts(object):
         facts = set_proxy_facts(facts)
         if not safe_get_bool(facts['common']['is_containerized']):
             facts = set_installed_variant_rpm_facts(facts)
-        facts = set_nodename(facts)
         return dict(openshift=facts)
 
     def get_defaults(self, roles, deployment_type, deployment_subtype):
@@ -1742,22 +1858,6 @@ class OpenShiftFacts(object):
                                   debug_level=2)
 
         if 'master' in roles:
-            scheduler_predicates = [
-                {"name": "MatchNodeSelector"},
-                {"name": "PodFitsResources"},
-                {"name": "PodFitsPorts"},
-                {"name": "NoDiskConflict"},
-                {"name": "NoVolumeZoneConflict"},
-                {"name": "MaxEBSVolumeCount"},
-                {"name": "MaxGCEPDVolumeCount"},
-                {"name": "Region", "argument": {"serviceAffinity" : {"labels" : ["region"]}}}
-            ]
-            scheduler_priorities = [
-                {"name": "LeastRequestedPriority", "weight": 1},
-                {"name": "SelectorSpreadPriority", "weight": 1},
-                {"name": "Zone", "weight" : 2, "argument": {"serviceAntiAffinity" : {"label": "zone"}}}
-            ]
-
             defaults['master'] = dict(api_use_ssl=True, api_port='8443',
                                       controllers_port='8444',
                                       console_use_ssl=True,
@@ -1774,8 +1874,6 @@ class OpenShiftFacts(object):
                                       access_token_max_seconds=86400,
                                       auth_token_max_seconds=500,
                                       oauth_grant_method='auto',
-                                      scheduler_predicates=scheduler_predicates,
-                                      scheduler_priorities=scheduler_priorities,
                                       dynamic_provisioning_enabled=True,
                                       max_requests_inflight=500)
 
@@ -1787,13 +1885,15 @@ class OpenShiftFacts(object):
 
         if 'docker' in roles:
             docker = dict(disable_push_dockerhub=False,
-                          hosted_registry_insecure=True,
                           options='--log-driver=json-file --log-opt max-size=50m')
             version_info = get_docker_version_info()
             if version_info is not None:
                 docker['api_version'] = version_info['api_version']
                 docker['version'] = version_info['version']
                 docker['gte_1_10'] = LooseVersion(version_info['version']) >= LooseVersion('1.10')
+            hosted_registry_insecure = get_hosted_registry_insecure()
+            if hosted_registry_insecure is not None:
+                docker['hosted_registry_insecure'] = hosted_registry_insecure
             defaults['docker'] = docker
 
         if 'clock' in roles:
@@ -2012,7 +2112,7 @@ class OpenShiftFacts(object):
             facts_to_set[self.role] = facts
 
         if openshift_env != {} and openshift_env != None:
-            for fact, value in openshift_env.iteritems():
+            for fact, value in iteritems(openshift_env):
                 oo_env_facts = dict()
                 current_level = oo_env_facts
                 keys = self.split_openshift_env_fact_keys(fact, openshift_env_structures)[1:]
@@ -2070,7 +2170,7 @@ class OpenShiftFacts(object):
                 facts (dict): facts to clean
         """
         facts_to_remove = []
-        for fact, value in facts.iteritems():
+        for fact, value in iteritems(facts):
             if isinstance(facts[fact], dict):
                 facts[fact] = self.remove_empty_facts(facts[fact])
             else:
@@ -2201,6 +2301,9 @@ def main():
 from ansible.module_utils.basic import *
 from ansible.module_utils.facts import *
 from ansible.module_utils.urls import *
+from ansible.module_utils.six import iteritems, itervalues
+from ansible.module_utils._text import to_native
+from ansible.module_utils.six import b
 
 if __name__ == '__main__':
     main()

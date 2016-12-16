@@ -1,6 +1,20 @@
 # This file is included both in the openshift_master role and in the upgrade
 # playbooks.
 
+- name: Pre-pull node image
+  command: >
+    docker pull {{ openshift.node.node_image }}:{{ openshift_image_tag }}
+  register: pull_result
+  changed_when: "'Downloaded newer image' in pull_result.stdout"
+  when: openshift.common.is_containerized | bool
+
+- name: Pre-pull openvswitch image
+  command: >
+    docker pull {{ openshift.node.ovs_image }}:{{ openshift_image_tag }}
+  register: pull_result
+  changed_when: "'Downloaded newer image' in pull_result.stdout"
+  when: openshift.common.is_containerized | bool and openshift.common.use_openshift_sdn | bool
+
 - name: Install Node dependencies docker service file
   template:
     dest: "/etc/systemd/system/{{ openshift.common.service_type }}-node-dep.service"
@@ -24,11 +38,26 @@
   notify:
   - restart openvswitch
 
+# May be a temporary workaround.
+# https://bugzilla.redhat.com/show_bug.cgi?id=1331590
+- name: Create OpenvSwitch service.d directory
+  file: path=/etc/systemd/system/openvswitch.service.d/ state=directory
+  when: openshift.common.use_openshift_sdn | default(true) | bool
+
+- name: Install OpenvSwitch service OOM fix
+  template:
+    dest: "/etc/systemd/system/openvswitch.service.d/01-avoid-oom.conf"
+    src: openvswitch-avoid-oom.conf
+  when: openshift.common.use_openshift_sdn | default(true) | bool
+  register: install_oom_fix_result
+  notify:
+  - restart openvswitch
+
 - name: Install OpenvSwitch docker service file
   template:
     dest: "/etc/systemd/system/openvswitch.service"
     src: openvswitch.docker.service
-  when: openshift.common.is_containerized | bool and openshift.common.use_openshift_sdn | bool
+  when: openshift.common.is_containerized | bool and openshift.common.use_openshift_sdn | default(true) | bool
   notify:
   - restart openvswitch
 
@@ -40,9 +69,9 @@
     create: true
   with_items:
     - regex: '^OPTIONS='
-      line: "OPTIONS=--loglevel={{ openshift.node.debug_level }}"
+      line: "OPTIONS=--loglevel={{ openshift.node.debug_level | default(2) }}"
     - regex: '^CONFIG_FILE='
-      line: "CONFIG_FILE={{ openshift_node_config_file }}"
+      line: "CONFIG_FILE={{ openshift.common.config_base }}/node/node-config.yaml"
     - regex: '^IMAGE_VERSION='
       line: "IMAGE_VERSION={{ openshift_image_tag }}"
   notify:
@@ -67,6 +96,6 @@
 
 - name: Reload systemd units
   command: systemctl daemon-reload
-  when: openshift.common.is_containerized | bool and (install_node_result | changed or install_ovs_sysconfig | changed or install_node_dep_result | changed)
+  when: (openshift.common.is_containerized | bool and (install_node_result | changed or install_ovs_sysconfig | changed or install_node_dep_result | changed)) or install_oom_fix_result | changed
   notify:
   - restart node

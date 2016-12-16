@@ -48,9 +48,6 @@ def set_config(cfg):
 def generate_inventory(hosts):
     global CFG
 
-    masters = [host for host in hosts if host.is_master()]
-    multiple_masters = len(masters) > 1
-
     new_nodes = [host for host in hosts if host.is_node() and host.new_host]
     scaleup = len(new_nodes) > 0
 
@@ -61,7 +58,7 @@ def generate_inventory(hosts):
 
     write_inventory_children(base_inventory, scaleup)
 
-    write_inventory_vars(base_inventory, multiple_masters, lb)
+    write_inventory_vars(base_inventory, lb)
 
     # write_inventory_hosts
     for role in CFG.deployment.roles:
@@ -106,7 +103,7 @@ def write_inventory_children(base_inventory, scaleup):
 
 
 # pylint: disable=too-many-branches
-def write_inventory_vars(base_inventory, multiple_masters, lb):
+def write_inventory_vars(base_inventory, lb):
     global CFG
     base_inventory.write('\n[OSEv3:vars]\n')
 
@@ -123,7 +120,7 @@ def write_inventory_vars(base_inventory, multiple_masters, lb):
     if CFG.deployment.variables['ansible_ssh_user'] != 'root':
         base_inventory.write('ansible_become=yes\n')
 
-    if multiple_masters and lb is not None:
+    if lb is not None:
         base_inventory.write('openshift_master_cluster_method=native\n')
         base_inventory.write("openshift_master_cluster_hostname={}\n".format(lb.hostname))
         base_inventory.write(
@@ -317,6 +314,10 @@ def run_uninstall_playbook(hosts, verbose=False):
         facts_env['ANSIBLE_LOG_PATH'] = CFG.settings['ansible_log_path']
     if 'ansible_config' in CFG.settings:
         facts_env['ANSIBLE_CONFIG'] = CFG.settings['ansible_config']
+    # override the ansible config for our main playbook run
+    if 'ansible_quiet_config' in CFG.settings:
+        facts_env['ANSIBLE_CONFIG'] = CFG.settings['ansible_quiet_config']
+
     return run_ansible(playbook, inventory_file, facts_env, verbose)
 
 
@@ -331,4 +332,8 @@ def run_upgrade_playbook(hosts, playbook, verbose=False):
         facts_env['ANSIBLE_LOG_PATH'] = CFG.settings['ansible_log_path']
     if 'ansible_config' in CFG.settings:
         facts_env['ANSIBLE_CONFIG'] = CFG.settings['ansible_config']
+    # override the ansible config for our main playbook run
+    if 'ansible_quiet_config' in CFG.settings:
+        facts_env['ANSIBLE_CONFIG'] = CFG.settings['ansible_quiet_config']
+
     return run_ansible(playbook, inventory_file, facts_env, verbose)
