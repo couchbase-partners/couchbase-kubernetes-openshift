@@ -40,6 +40,8 @@ ssh_templates: master_ip generate_templates
 ssh_project: master_ip
 	$(SSH) centos@$(MASTER_IP) sudo oc new-project couchbase
 	$(SSH) centos@$(MASTER_IP) sudo oc policy add-role-to-user edit system:serviceaccount:couchbase:default -n couchbase
+	$(SSH) centos@$(MASTER_IP) sudo oadm policy add-cluster-role-to-user system:node-reader system:serviceaccount:couchbase:default
 	$(SSH) centos@$(MASTER_IP) sudo oc policy add-role-to-user admin admin -n couchbase
+
 ansible_update:
 	pass
