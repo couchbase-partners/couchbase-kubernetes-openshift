@@ -25,6 +25,9 @@ ssh_import_image: master_ip
 generate_templates:
 	ruby templates/couchbase-petset-generate.rb
 
+ssh_dns_patch: master_ip
+	echo "yum install -y bzip2 && curl -sL -o /tmp/openshift.bz2 https://storage.googleapis.com/jetstack-openshift-builds/openshift-1.3.3-dns-unready-patched.bz2 && bunzip2 /tmp/openshift.bz2 && chmod +x /tmp/openshift && mv /tmp/openshift /usr/bin/openshift && systemctl restart origin-master" | $(SSH) centos@$(MASTER_IP) sudo bash
+
 ssh_templates: master_ip generate_templates
 	## only needed for the root image
 	#$(SSH) centos@$(MASTER_IP) sudo oc patch scc restricted -p "'{\"runAsUser\":{\"type\": \"RunAsAny\"}}'"
