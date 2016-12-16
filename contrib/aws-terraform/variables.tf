@@ -49,7 +49,7 @@ variable "num_master" {
 }
 
 variable "num_node_compute" {
-  default = "2"
+  default = "6"
 }
 
 variable "num_node_infra" {
