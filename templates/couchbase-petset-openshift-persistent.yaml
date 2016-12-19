@@ -521,8 +521,9 @@ parameters:
   value: "###REGISTRY_IP###:5000"
   required: true
 - name: REPLICAS_DATA
-  displayName: Replica count of data nodes
-  description: How many data nodes get provisioned
+  displayName: Desired Pod count for data nodes
+  description: How many data nodes should be provisioned? These values can be changed
+    later, by scaling up/down
   value: '3'
 - name: MEMORY_LIMIT_DATA
   displayName: Memory Limit for data nodes
@@ -539,8 +540,9 @@ parameters:
   value: gp2
   required: true
 - name: REPLICAS_INDEX
-  displayName: Replica count of data nodes
-  description: How many index nodes get provisioned
+  displayName: Desired Pod count for index nodes
+  description: How many index nodes should be provisioned? These values can be changed
+    later, by scaling up/down
   value: '3'
 - name: MEMORY_LIMIT_INDEX
   displayName: Memory Limit for index nodes
@@ -557,8 +559,9 @@ parameters:
   value: gp2
   required: true
 - name: REPLICAS_QUERY
-  displayName: Replica count of data nodes
-  description: How many query nodes get provisioned
+  displayName: Desired Pod count for query nodes
+  description: How many query nodes should be provisioned? These values can be changed
+    later, by scaling up/down
   value: '3'
 - name: MEMORY_LIMIT_QUERY
   displayName: Memory Limit for query nodes

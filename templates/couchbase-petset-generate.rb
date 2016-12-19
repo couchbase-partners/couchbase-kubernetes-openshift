@@ -571,8 +571,8 @@ class CouchbasePetset
     roles.each do |role|
       params << {
         'name' => "REPLICAS_#{role.upcase}",
-        'displayName' => 'Replica count of data nodes',
-        'description' => "How many #{role} nodes get provisioned",
+        'displayName' => "Desired Pod count for #{role} nodes",
+        'description' => "How many #{role} nodes should be provisioned? These values can be changed later, by scaling up/down",
         'value' => '3'
       }
       params << {
