@@ -2,7 +2,6 @@ require 'yaml'
 require 'json'
 require 'pathname'
 
-
 class CouchbasePetset
   def initialize(opts = {})
     @opts = opts
@@ -18,9 +17,7 @@ class CouchbasePetset
 
   def param_enabled
     key = 'param_enabled'
-    if @opts.key? key
-      return @opts[key]
-    end
+    return @opts[key] if @opts.key? key
     true
   end
 
@@ -41,7 +38,7 @@ class CouchbasePetset
       next if param['name'] != name
       break if param['value'].nil?
 
-      return param['value'].to_i if name.match(/^REPLICAS_/) 
+      return param['value'].to_i if name =~ /^REPLICAS_/
 
       return param['value']
     end
@@ -141,7 +138,7 @@ class CouchbasePetset
     {
       'kind' => 'ConfigMap',
       'apiVersion' => 'v1',
-      'metadata' => { 'name' => param('DATABASE_SERVICE_NAME')},
+      'metadata' => { 'name' => param('DATABASE_SERVICE_NAME') },
       'data' => config_map_data
     }
   end
@@ -353,7 +350,7 @@ class CouchbasePetset
           'cpu' => 0.1
         },
         'limits' => {
-          'memory' => param("MEMORY_LIMIT_#{role.upcase}"),
+          'memory' => param("MEMORY_LIMIT_#{role.upcase}")
         }
       },
       'volumeMounts' =>
@@ -418,7 +415,7 @@ class CouchbasePetset
             },
             'annotations' => {
               'pod.alpha.kubernetes.io/initialized' => 'true',
-              'scheduler.alpha.kubernetes.io/affinity' => scheduler_anti_affinity.to_json,
+              'scheduler.alpha.kubernetes.io/affinity' => scheduler_anti_affinity.to_json
             }
           },
           'spec' =>
@@ -509,7 +506,7 @@ class CouchbasePetset
       'apiVersion' => 'v1',
       'kind' => 'DeploymentConfig',
       'metadata' => {
-        'name' => "#{param('DATABASE_SERVICE_NAME')}-#{role}",
+        'name' => "#{param('DATABASE_SERVICE_NAME')}-#{role}"
       },
       'spec' =>
       {
@@ -674,7 +671,7 @@ def write_k8s_templates
       'storage_type' => storage_type,
       'image_pull_policy' => 'IfNotPresent',
       'image' => 'couchbase/server:enterprise-4.5.1',
-      'param_enabled' => false,
+      'param_enabled' => false
     )
     File.open(dir.join("couchbase-petset-k8s-#{storage_type}.yaml"), 'w') do |file|
       file.write c.k8s_template.to_yaml

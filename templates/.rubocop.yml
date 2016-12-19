@@ -13,6 +13,9 @@ Metrics/MethodLength:
 Metrics/LineLength:
   Exclude:
     - 'couchbase-petset-generate.rb'
+Metrics/CyclomaticComplexity:
+  Exclude:
+    - 'couchbase-petset-generate.rb'
 Style/Documentation:
   Exclude:
     - 'couchbase-petset-generate.rb'
