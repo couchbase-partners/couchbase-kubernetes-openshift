@@ -33,6 +33,7 @@ ssh_templates: master_ip generate_templates
 	$(eval REGISTRY_IP = $(shell $(SSH) centos@$(MASTER_IP) sudo kubectl --namespace default get svc docker-registry -o jsonpath={.spec.clusterIP}))
 	cat templates/couchbase-petset-openshift-persistent.yaml | sed "s/###REGISTRY_IP###/$(REGISTRY_IP)/g" | $(SSH) centos@$(MASTER_IP) sudo oc apply --namespace=openshift -f -
 	cat templates/couchbase-petset-openshift-ephemeral.yaml | sed "s/###REGISTRY_IP###/$(REGISTRY_IP)/g" | $(SSH) centos@$(MASTER_IP) sudo oc apply --namespace=openshift -f -
+	cat templates/cbc-pillowfight-template.yaml | sed "s/###REGISTRY_IP###/$(REGISTRY_IP)/g" | $(SSH) centos@$(MASTER_IP) sudo oc apply --namespace=openshift -f -
 	
 ssh_project: master_ip
 	$(SSH) centos@$(MASTER_IP) sudo oc new-project couchbase
