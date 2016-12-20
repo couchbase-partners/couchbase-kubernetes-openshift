@@ -8,5 +8,7 @@ Further details can be found in the project Wiki:
 
 Especially the setup procedure and demo details can be found here:
 
-* [Setup](https://github.com/dmaier-couchbase/cb-openshift3/wiki/Setup-OpenShift)
-* [Demos](https://github.com/dmaier-couchbase/cb-openshift3/wiki/OpenShift-Demos)
+* [Setup OpenShift](https://github.com/dmaier-couchbase/cb-openshift3/wiki/Setup-OpenShift)
+* [Prepare OpenShift](https://github.com/dmaier-couchbase/cb-openshift3/wiki/Prepare-OpenShift)
+* [Install Templates](https://github.com/dmaier-couchbase/cb-openshift3/wiki/OpenShift-Demos)
+* [Next Steps](https://github.com/dmaier-couchbase/cb-openshift3/wiki/Next-Steps)
