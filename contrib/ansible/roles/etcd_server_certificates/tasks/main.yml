@@ -1,6 +1,6 @@
 ---
 - name: Install etcd
-  action: "{{ ansible_pkg_mgr }} name=etcd state=present"
+  package: name=etcd{{ '-' + etcd_version if etcd_version is defined else '' }} state=present
   when: not etcd_is_containerized | bool
 
 - name: Check status of etcd certificates
@@ -58,6 +58,7 @@
                  ~ etcd_cert_prefix ~ 'server.crt' }}"
   environment:
     SAN: "IP:{{ etcd_ip }}"
+  when: etcd_server_certs_missing | bool
   delegate_to: "{{ etcd_ca_host }}"
 
 - name: Create the peer csr
@@ -140,6 +141,38 @@
   unarchive:
     src: "{{ g_etcd_server_mktemp.stdout }}/{{ etcd_cert_subdir }}.tgz"
     dest: "{{ etcd_cert_config_dir }}"
+  when: etcd_server_certs_missing | bool
+
+- name: Create a tarball of the etcd ca certs
+  command: >
+    tar -czvf {{ etcd_generated_certs_dir }}/{{ etcd_ca_name }}.tgz
+      -C {{ etcd_ca_dir }} .
+  args:
+    creates: "{{ etcd_generated_certs_dir }}/{{ etcd_ca_name }}.tgz"
+    warn: no
+  when: etcd_server_certs_missing | bool
+  delegate_to: "{{ etcd_ca_host }}"
+
+- name: Retrieve etcd ca cert tarball
+  fetch:
+    src: "{{ etcd_generated_certs_dir }}/{{ etcd_ca_name }}.tgz"
+    dest: "{{ g_etcd_server_mktemp.stdout }}/"
+    flat: yes
+    fail_on_missing: yes
+    validate_checksum: yes
+  when: etcd_server_certs_missing | bool
+  delegate_to: "{{ etcd_ca_host }}"
+
+- name: Ensure ca directory exists
+  file:
+    path: "{{ etcd_ca_dir }}"
+    state: directory
+  when: etcd_server_certs_missing | bool
+
+- name: Unarchive etcd ca cert tarballs
+  unarchive:
+    src: "{{ g_etcd_server_mktemp.stdout }}/{{ etcd_ca_name }}.tgz"
+    dest: "{{ etcd_ca_dir }}"
   when: etcd_server_certs_missing | bool
 
 - name: Delete temporary directory

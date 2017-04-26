@@ -20,17 +20,6 @@
         annotations: "{{ openshift_node_annotations | default(None) }}"
         schedulable: "{{ openshift_schedulable | default(openshift_scheduleable) | default(None) }}"
 
-- name: Create temp directory for syncing certs
-  hosts: localhost
-  connection: local
-  become: no
-  gather_facts: no
-  tasks:
-  - name: Create local temp directory for syncing certs
-    local_action: command mktemp -d /tmp/openshift-ansible-XXXXXXX
-    register: mktemp
-    changed_when: False
-
 - name: Evaluate node groups
   hosts: localhost
   become: no
@@ -44,6 +33,7 @@
       ansible_become: "{{ g_sudo | default(omit) }}"
     with_items: "{{ groups.oo_nodes_to_config | default([]) }}"
     when: hostvars[item].openshift.common is defined and hostvars[item].openshift.common.is_containerized | bool and (item in groups.oo_nodes_to_config and item in groups.oo_masters_to_config)
+    changed_when: False
 
 - name: Configure containerized nodes
   hosts: oo_containerized_master_nodes
@@ -60,30 +50,8 @@
     when: "{{ (openshift_http_proxy is defined or openshift_https_proxy is defined) and
             openshift_generate_no_proxy_hosts | default(True) | bool }}"
   roles:
-  - role: openshift_common
-  - role: openshift_clock
-  - role: openshift_docker
-  - role: openshift_node_certificates
-    openshift_ca_host: "{{ groups.oo_first_master.0 }}"
-  - role: openshift_cloud_provider
-  - role: openshift_node_dnsmasq
-    when: openshift.common.use_dnsmasq | bool
-  - role: os_firewall
-    os_firewall_allow:
-    - service: Kubernetes kubelet
-      port: 10250/tcp
-    - service: http
-      port: 80/tcp
-    - service: https
-      port: 443/tcp
-    - service: Openshift kubelet ReadOnlyPort
-      port: 10255/tcp
-    - service: Openshift kubelet ReadOnlyPort udp
-      port: 10255/udp
-    - service: OpenShift OVS sdn
-      port: 4789/udp
-      when: openshift.node.use_openshift_sdn | bool
   - role: openshift_node
+    openshift_ca_host: "{{ groups.oo_first_master.0 }}"
 
 - name: Configure nodes
   hosts: oo_nodes_to_config:!oo_containerized_master_nodes
@@ -99,30 +67,8 @@
     when: "{{ (openshift_http_proxy is defined or openshift_https_proxy is defined) and
             openshift_generate_no_proxy_hosts | default(True) | bool }}"
   roles:
-  - role: openshift_common
-  - role: openshift_clock
-  - role: openshift_docker
-  - role: openshift_node_certificates
-    openshift_ca_host: "{{ groups.oo_first_master.0 }}"
-  - role: openshift_cloud_provider
-  - role: openshift_node_dnsmasq
-    when: openshift.common.use_dnsmasq | bool
-  - role: os_firewall
-    os_firewall_allow:
-    - service: Kubernetes kubelet
-      port: 10250/tcp
-    - service: http
-      port: 80/tcp
-    - service: https
-      port: 443/tcp
-    - service: Openshift kubelet ReadOnlyPort
-      port: 10255/tcp
-    - service: Openshift kubelet ReadOnlyPort udp
-      port: 10255/udp
-    - service: OpenShift OVS sdn
-      port: 4789/udp
-      when: openshift.node.use_openshift_sdn | bool
   - role: openshift_node
+    openshift_ca_host: "{{ groups.oo_first_master.0 }}"
 
 - name: Additional node config
   hosts: oo_nodes_to_config
@@ -138,19 +84,13 @@
     when: openshift.common.use_flannel | bool
   - role: nuage_node
     when: openshift.common.use_nuage | bool
+  - role: contiv
+    contiv_role: netplugin
+    when: openshift.common.use_contiv | bool
   - role: nickhammond.logrotate
   - role: openshift_manage_node
     openshift_master_host: "{{ groups.oo_first_master.0 }}"
   tasks:
   - name: Create group for deployment type
     group_by: key=oo_nodes_deployment_type_{{ openshift.common.deployment_type }}
-    changed_when: False
-
-- name: Delete temporary directory on localhost
-  hosts: localhost
-  connection: local
-  become: no
-  gather_facts: no
-  tasks:
-  - file: name={{ mktemp.stdout }} state=absent
     changed_when: False

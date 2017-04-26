@@ -16,7 +16,7 @@ setup(
     description="Ansible wrapper for OpenShift Enterprise 3 installation.",
 
     # The project's main homepage.
-    url="http://github.com/openshift/openshift-extras/tree/enterprise-3.0/oo-install",
+    url="https://github.com/openshift/openshift-ansible",
 
     # Author details
     author="openshift@redhat.com",
@@ -38,25 +38,14 @@ setup(
 
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
-    #packages=find_packages(exclude=['contrib', 'docs', 'tests*']),
     packages=['ooinstall'],
-    package_dir={'ooinstall': 'src/ooinstall'},
-
+    package_dir={'': 'src'},
 
     # List run-time dependencies here.  These will be installed by pip when
     # your project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=['click', 'PyYAML'],
-
-    # List additional groups of dependencies here (e.g. development
-    # dependencies). You can install these using the following syntax,
-    # for example:
-    # $ pip install -e .[dev,test]
-    #extras_require={
-    #    'dev': ['check-manifest'],
-    #    'test': ['coverage'],
-    #},
+    install_requires=['click', 'PyYAML', 'ansible'],
 
     # If there are data files included in your packages that need to be
     # installed, specify them here.  If using Python 2.6 or less, then these
@@ -64,10 +53,6 @@ setup(
     package_data={
         'ooinstall': ['ansible.cfg', 'ansible-quiet.cfg', 'ansible_plugins/*'],
     },
-
-    tests_require=['nose'],
-
-    test_suite='nose.collector',
 
     # To provide executable scripts, use entry points in preference to the
     # "scripts" keyword. Entry points provide cross-platform support and allow

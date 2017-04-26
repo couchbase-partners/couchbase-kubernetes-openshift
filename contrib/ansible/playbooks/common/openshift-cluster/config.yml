@@ -1,20 +1,4 @@
 ---
-- include: evaluate_groups.yml
-  tags:
-  - always
-
-- include: initialize_facts.yml
-  tags:
-  - always
-
-- include: validate_hostnames.yml
-  tags:
-  - node
-
-- include: initialize_openshift_version.yml
-  tags:
-  - always
-
 - name: Set oo_option facts
   hosts: oo_all_hosts
   tags:
@@ -38,6 +22,13 @@
   - set_fact:
       openshift_docker_log_options: "{{ lookup('oo_option', 'docker_log_options') }}"
     when: openshift_docker_log_options is not defined
+  - set_fact:
+      openshift_docker_selinux_enabled: "{{ lookup('oo_option', 'docker_selinux_enabled') }}"
+    when: openshift_docker_selinux_enabled is not defined
+
+- include: disable_excluder.yml
+  tags:
+  - always
 
 - include: ../openshift-etcd/config.yml
   tags:
@@ -66,3 +57,7 @@
 - include: openshift_hosted.yml
   tags:
   - hosted
+
+- include: reset_excluder.yml
+  tags:
+  - always

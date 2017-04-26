@@ -30,17 +30,17 @@ deployment_type=origin
 # use this to lookup the latest exact version of the container images, which is the tag actually used to configure
 # the cluster. For RPM installations we just verify the version detected in your configured repos matches this
 # release.
-openshift_release=v1.4
+openshift_release=v1.5
 
 # Specify an exact container image tag to install or configure.
 # WARNING: This value will be used for all hosts in containerized environments, even those that have another version installed.
 # This could potentially trigger an upgrade and downtime, so be careful with modifying this value after the cluster is set up.
-#openshift_image_tag=v1.2.0
+#openshift_image_tag=v1.5.0
 
 # Specify an exact rpm version to install or configure.
 # WARNING: This value will be used for all hosts in RPM based environments, even those that have another version installed.
 # This could potentially trigger an upgrade and downtime, so be careful with modifying this value after the cluster is set up.
-#openshift_pkg_version=-1.2.0
+#openshift_pkg_version=-1.5.0
 
 # Install the openshift examples
 #openshift_install_examples=true
@@ -79,7 +79,7 @@ openshift_release=v1.4
 # Disable pushing to dockerhub
 #openshift_docker_disable_push_dockerhub=True
 # Items added, as is, to end of /etc/sysconfig/docker OPTIONS
-# Default value: "--log-driver=json-file --log-opt max-size=50m"
+# Default value: "--log-driver=journald"
 #openshift_docker_options="-l warn --ipv6=false"
 
 # Specify exact version of Docker to configure or upgrade to.
@@ -88,6 +88,27 @@ openshift_release=v1.4
 
 # Skip upgrading Docker during an OpenShift upgrade, leaves the current Docker version alone.
 # docker_upgrade=False
+
+# Specify exact version of etcd to configure or upgrade to.
+# etcd_version="3.1.0"
+
+# Upgrade Hooks
+#
+# Hooks are available to run custom tasks at various points during a cluster
+# upgrade. Each hook should point to a file with Ansible tasks defined. Suggest using
+# absolute paths, if not the path will be treated as relative to the file where the
+# hook is actually used.
+#
+# Tasks to run before each master is upgraded.
+# openshift_master_upgrade_pre_hook=/usr/share/custom/pre_master.yml
+#
+# Tasks to run to upgrade the master. These tasks run after the main openshift-ansible
+# upgrade steps, but before we restart system/services.
+# openshift_master_upgrade_hook=/usr/share/custom/master.yml
+#
+# Tasks to run after each master is upgraded and system/services have been restarted.
+# openshift_master_upgrade_post_hook=/usr/share/custom/post_master.yml
+
 
 # Alternate image format string, useful if you've got your own registry mirror
 #oreg_url=example.com/openshift3/ose-${component}:${version}
@@ -281,6 +302,57 @@ openshift_master_identity_providers=[{'name': 'htpasswd_auth', 'login': 'true', 
 #
 # Disable management of the OpenShift Router
 #openshift_hosted_manage_router=false
+#
+# Router sharding support has been added and can be achieved by supplying the correct
+# data to the inventory.  The variable to house the data is openshift_hosted_routers
+# and is in the form of a list.  If no data is passed then a default router will be
+# created.  There are multiple combinations of router sharding.  The one described
+# below supports routers on separate nodes.
+#openshift_hosted_routers:
+#- name: router1
+#  stats_port: 1936
+#  ports:
+#  - 80:80
+#  - 443:443
+#  replicas: 1
+#  namespace: default
+#  serviceaccount: router
+#  selector: type=router1
+#  images: "openshift3/ose-${component}:${version}"
+#  edits: []
+#  certificates:
+#    certfile: /path/to/certificate/abc.crt
+#    keyfile: /path/to/certificate/abc.key
+#    cafile: /path/to/certificate/ca.crt
+#- name: router2
+#  stats_port: 1936
+#  ports:
+#  - 80:80
+#  - 443:443
+#  replicas: 1
+#  namespace: default
+#  serviceaccount: router
+#  selector: type=router2
+#  images: "openshift3/ose-${component}:${version}"
+#  certificates:
+#    certfile: /path/to/certificate/xyz.crt
+#    keyfile: /path/to/certificate/xyz.key
+#    cafile: /path/to/certificate/ca.crt
+#  edits:
+#  # ROUTE_LABELS sets the router to listen for routes
+#  # tagged with the provided values
+#  - key: spec.template.spec.containers[0].env
+#    value:
+#      name: ROUTE_LABELS
+#      value: "route=external"
+#    action: append
+#
+# OpenShift Registry Console Options
+# Override the console image prefix for enterprise deployments, not used in origin
+# default is "registry.access.redhat.com/openshift3/" and the image appended is "registry-console"
+#openshift_cockpit_deployer_prefix=registry.example.com/myrepo/
+# Override image version, defaults to latest for origin, matches the product version for enterprise
+#openshift_cockpit_deployer_version=1.4.1
 
 # Openshift Registry Options
 #
@@ -367,6 +439,12 @@ openshift_master_identity_providers=[{'name': 'htpasswd_auth', 'login': 'true', 
 #openshift_hosted_registry_pullthrough=true
 #openshift_hosted_registry_acceptschema2=true
 #openshift_hosted_registry_enforcequota=true
+#
+# Additional CloudFront Options. When using CloudFront all three
+# of the followingg variables must be defined.
+#openshift_hosted_registry_storage_s3_cloudfront_baseurl=https://myendpoint.cloudfront.net/
+#openshift_hosted_registry_storage_s3_cloudfront_privatekeyfile=/full/path/to/secret.pem
+#openshift_hosted_registry_storage_s3_cloudfront_keypairid=yourpairid
 
 # Metrics deployment
 # See: https://docs.openshift.com/enterprise/latest/install_config/cluster_metrics.html
@@ -406,6 +484,9 @@ openshift_master_identity_providers=[{'name': 'htpasswd_auth', 'login': 'true', 
 # Option C - Dynamic -- If openshift supports dynamic volume provisioning for
 # your cloud platform use this.
 #openshift_hosted_metrics_storage_kind=dynamic
+#
+# Other Metrics Options -- Common items you may wish to reconfigure, for the complete
+# list of options please see roles/openshift_metrics/README.md
 #
 # Override metricsPublicURL in the master config for cluster metrics
 # Defaults to https://hawkular-metrics.{{openshift_master_default_subdomain}}/hawkular/metrics
@@ -449,18 +530,17 @@ openshift_master_identity_providers=[{'name': 'htpasswd_auth', 'login': 'true', 
 # pods are deleted
 #
 # Other Logging Options -- Common items you may wish to reconfigure, for the complete
-# list of options please see roles/openshift_hosted_logging/README.md
+# list of options please see roles/openshift_logging/README.md
 #
 # Configure loggingPublicURL in the master config for aggregate logging, defaults
-# to https://kibana.{{ openshift_master_default_subdomain }}
-#openshift_master_logging_public_url=https://kibana.example.com
+# to kibana.{{ openshift_master_default_subdomain }}
+#openshift_hosted_logging_hostname=logging.apps.example.com
 # Configure the number of elastic search nodes, unless you're using dynamic provisioning
 # this value must be 1
 #openshift_hosted_logging_elasticsearch_cluster_size=1
-#openshift_hosted_logging_hostname=logging.apps.example.com
-# Configure the prefix and version for the deployer image
-#openshift_hosted_logging_deployer_prefix=registry.example.com:8888/openshift3/
-#openshift_hosted_logging_deployer_version=3.3.0
+# Configure the prefix and version for the component images
+#openshift_hosted_logging_deployer_prefix=docker.io/openshift/origin-
+#openshift_hosted_logging_deployer_version=1.5.0
 
 # Configure the multi-tenant SDN plugin (default is 'redhat/openshift-ovs-subnet')
 # os_sdn_network_plugin_name='redhat/openshift-ovs-multitenant'
@@ -509,10 +589,7 @@ openshift_master_identity_providers=[{'name': 'htpasswd_auth', 'login': 'true', 
 # NOTE: CA certificate will not be replaced with existing clusters.
 # This option may only be specified when creating a new cluster or
 # when redeploying cluster certificates with the redeploy-certificates
-# playbook. If replacing the CA certificate in an existing cluster
-# with a custom ca certificate, the following variable must also be
-# set.
-#openshift_certificates_redeploy_ca=true
+# playbook.
 
 # Configure custom named certificates (SNI certificates)
 #
@@ -606,17 +683,39 @@ openshift_master_identity_providers=[{'name': 'htpasswd_auth', 'login': 'true', 
 #openshift_generate_no_proxy_hosts=True
 #
 # These options configure the BuildDefaults admission controller which injects
-# environment variables into Builds. These values will default to the global proxy
-# config values. You only need to set these if they differ from the global settings
-# above. See BuildDefaults
-# documentation at https://docs.openshift.org/latest/admin_guide/build_defaults_overrides.html
+# configuration into Builds. Proxy related values will default to the global proxy
+# config values. You only need to set these if they differ from the global proxy settings.
+# See BuildDefaults documentation at
+# https://docs.openshift.org/latest/admin_guide/build_defaults_overrides.html
 #openshift_builddefaults_http_proxy=http://USER:PASSWORD@HOST:PORT
 #openshift_builddefaults_https_proxy=https://USER:PASSWORD@HOST:PORT
-#openshift_builddefaults_no_proxy=build_defaults
+#openshift_builddefaults_no_proxy=mycorp.com
 #openshift_builddefaults_git_http_proxy=http://USER:PASSWORD@HOST:PORT
 #openshift_builddefaults_git_https_proxy=https://USER:PASSWORD@HOST:PORT
-# Or you may optionally define your own serialized as json
-#openshift_builddefaults_json='{"BuildDefaults":{"configuration":{"kind":"BuildDefaultsConfig","apiVersion":"v1","gitHTTPSProxy":"http://proxy.example.com.redhat.com:3128","gitHTTPProxy":"http://proxy.example.com.redhat.com:3128","env":[{"name":"HTTP_PROXY","value":"http://proxy.example.com.redhat.com:3128"},{"name":"HTTPS_PROXY","value":"http://proxy.example.com.redhat.com:3128"},{"name":"NO_PROXY","value":"ose3-master.example.com"}]}}'
+#openshift_builddefaults_git_no_proxy=mycorp.com
+#openshift_builddefaults_image_labels=[{'name':'imagelabelname1','value':'imagelabelvalue1'}]
+#openshift_builddefaults_nodeselectors={'nodelabel1':'nodelabelvalue1'}
+#openshift_builddefaults_annotations={'annotationkey1':'annotationvalue1'}
+#openshift_builddefaults_resources_requests_cpu=100m
+#openshift_builddefaults_resources_requests_memory=256m
+#openshift_builddefaults_resources_limits_cpu=1000m
+#openshift_builddefaults_resources_limits_memory=512m
+
+# Or you may optionally define your own build defaults configuration serialized as json
+#openshift_builddefaults_json='{"BuildDefaults":{"configuration":{"apiVersion":"v1","env":[{"name":"HTTP_PROXY","value":"http://proxy.example.com.redhat.com:3128"},{"name":"NO_PROXY","value":"ose3-master.example.com"}],"gitHTTPProxy":"http://proxy.example.com:3128","gitNoProxy":"ose3-master.example.com","kind":"BuildDefaultsConfig"}}}'
+
+# These options configure the BuildOverrides admission controller which injects
+# configuration into Builds.
+# See BuildOverrides documentation at
+# https://docs.openshift.org/latest/admin_guide/build_defaults_overrides.html
+#openshift_buildoverrides_force_pull=true
+#openshift_buildoverrides_image_labels=[{'name':'imagelabelname1','value':'imagelabelvalue1'}]
+#openshift_buildoverrides_nodeselectors={'nodelabel1':'nodelabelvalue1'}
+#openshift_buildoverrides_annotations={'annotationkey1':'annotationvalue1'}
+
+# Or you may optionally define your own build overrides configuration serialized as json
+#openshift_buildoverrides_json='{"BuildOverrides":{"configuration":{"apiVersion":"v1","kind":"BuildDefaultsConfig","forcePull":"true"}}}'
+
 # masterConfig.volumeConfig.dynamicProvisioningEnabled, configurable as of 1.2/3.2, enabled by default
 #openshift_master_dynamic_provisioning_enabled=False
 

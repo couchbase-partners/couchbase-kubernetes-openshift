@@ -27,4 +27,12 @@
   - openshift_facts
   - openshift_docker
 
+- include: ../openshift-cluster/disable_excluder.yml
+  tags:
+  - always
+
 - include: ../openshift-node/config.yml
+
+- include: ../openshift-cluster/reset_excluder.yml
+  tags:
+  - always

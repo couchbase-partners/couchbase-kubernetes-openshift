@@ -15,8 +15,8 @@ assetConfig:
 {% if 'logging_public_url' in openshift.master %}
   loggingPublicURL: {{ openshift.master.logging_public_url }}
 {% endif %}
-{% if 'metrics_public_url' in openshift.master %}
-  metricsPublicURL: {{ openshift.master.metrics_public_url }}
+{% if openshift_hosted_metrics_deploy_url is defined %}
+  metricsPublicURL: {{ openshift_hosted_metrics_deploy_url }}
 {% endif %}
 {% if 'extension_scripts' in openshift.master %}
   extensionScripts: {{ openshift.master.extension_scripts | to_padded_yaml(1, 2) }}
@@ -65,7 +65,11 @@ dnsConfig:
   bindNetwork: tcp4
 {% endif %}
 etcdClientInfo:
+{% if openshift.common.version_gte_3_2_or_1_2 | bool %}
+  ca: {{ "ca-bundle.crt" if (openshift.master.embedded_etcd | bool) else "master.etcd-ca.crt" }}
+{% else %}
   ca: {{ "ca.crt" if (openshift.master.embedded_etcd | bool) else "master.etcd-ca.crt" }}
+{% endif %}
   certFile: master.etcd-client.crt
   keyFile: master.etcd-client.key
   urls:
@@ -79,12 +83,20 @@ etcdConfig:
   peerServingInfo:
     bindAddress: {{ openshift.master.bind_addr }}:7001
     certFile: etcd.server.crt
+{% if openshift.common.version_gte_3_2_or_1_2 | bool %}
+    clientCA: ca-bundle.crt
+{% else %}
     clientCA: ca.crt
+{% endif %}
     keyFile: etcd.server.key
   servingInfo:
     bindAddress: {{ openshift.master.bind_addr }}:{{ openshift.master.etcd_port }}
     certFile: etcd.server.crt
+{% if openshift.common.version_gte_3_2_or_1_2 | bool %}
+    clientCA: ca-bundle.crt
+{% else %}
     clientCA: ca.crt
+{% endif %}
     keyFile: etcd.server.key
   storageDirectory: {{ openshift.common.data_dir }}/openshift.local.etcd
 {% endif %}
@@ -102,7 +114,11 @@ imagePolicyConfig:{{ openshift.master.image_policy_config | to_padded_yaml(level
 kind: MasterConfig
 kubeletClientInfo:
 {# TODO: allow user specified kubelet port #}
+{% if openshift.common.version_gte_3_2_or_1_2 | bool %}
+  ca: ca-bundle.crt
+{% else %}
   ca: ca.crt
+{% endif %}
   certFile: master.kubelet-client.crt
   keyFile: master.kubelet-client.key
   port: 10250
@@ -121,8 +137,9 @@ kubernetesMasterConfig:
   proxyClientInfo:
     certFile: master.proxy-client.crt
     keyFile: master.proxy-client.key
+  schedulerArguments: {{ openshift_master_scheduler_args | default(None) | to_padded_yaml( level=3 ) }}
   schedulerConfigFile: {{ openshift_master_scheduler_conf }}
-  servicesNodePortRange: ""
+  servicesNodePortRange: "{{ openshift_node_port_range | default("") }}"
   servicesSubnet: {{ openshift.common.portal_net }}
   staticNodeNames: {{ openshift_node_ips | default([], true) }}
 {% endif %}
@@ -148,7 +165,7 @@ masterPublicURL: {{ openshift.master.public_api_url }}
 networkConfig:
   clusterNetworkCIDR: {{ openshift.master.sdn_cluster_network_cidr }}
   hostSubnetLength: {{ openshift.master.sdn_host_subnet_length }}
-{% if openshift.common.use_openshift_sdn or openshift.common.use_nuage %}
+{% if openshift.common.use_openshift_sdn or openshift.common.use_nuage or openshift.common.use_contiv or openshift.common.sdn_network_plugin_name == 'cni' %}
   networkPluginName: {{ openshift.common.sdn_network_plugin_name }}
 {% endif %}
 # serviceNetworkCIDR must match kubernetesMasterConfig.servicesSubnet
@@ -201,7 +218,7 @@ projectConfig:
     mcsLabelsPerProject: {{ openshift.master.mcs_labels_per_project }}
     uidAllocatorRange: "{{ openshift.master.uid_allocator_range  }}"
 routingConfig:
-  subdomain:  "{{ openshift.master.default_subdomain | default("") }}"
+  subdomain:  "{{ openshift_master_default_subdomain | default("") }}"
 serviceAccountConfig:
   limitSecretReferences: false
   managedNames:
@@ -220,7 +237,11 @@ servingInfo:
   bindAddress: {{ openshift.master.bind_addr }}:{{ openshift.master.api_port }}
   bindNetwork: tcp4
   certFile: master.server.crt
+{% if openshift.common.version_gte_3_2_or_1_2 | bool %}
+  clientCA: ca-bundle.crt
+{% else %}
   clientCA: ca.crt
+{% endif %}
   keyFile: master.server.key
   maxRequestsInFlight: {{ openshift.master.max_requests_inflight }}
   requestTimeoutSeconds: 3600

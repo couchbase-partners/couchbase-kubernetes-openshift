@@ -8,8 +8,8 @@
   tags:
   - pre_upgrade
 
-# Configure the upgrade target for the common upgrade tasks:
-- hosts: l_oo_all_hosts
+- name: Configure the upgrade target for the common upgrade tasks
+  hosts: l_oo_all_hosts
   tags:
   - pre_upgrade
   tasks:
@@ -44,6 +44,10 @@
             openshift_generate_no_proxy_hosts | default(True) | bool }}"
 
 - include: ../../../../common/openshift-cluster/upgrades/pre/verify_inventory_vars.yml
+  tags:
+  - pre_upgrade
+
+- include: ../../../../common/openshift-cluster/upgrades/disable_excluder.yml
   tags:
   - pre_upgrade
 

@@ -15,8 +15,8 @@
   tags:
   - pre_upgrade
 
-# Configure the upgrade target for the common upgrade tasks:
-- hosts: l_oo_all_hosts
+- name: Configure the upgrade target for the common upgrade tasks
+  hosts: l_oo_all_hosts
   tags:
   - pre_upgrade
   tasks:
@@ -25,6 +25,9 @@
       openshift_upgrade_min: "{{ '1.3' if deployment_type == 'origin' else '3.3' }}"
 
 # Pre-upgrade
+- include: ../../../../common/openshift-cluster/upgrades/initialize_nodes_to_upgrade.yml
+  tags:
+  - pre_upgrade
 
 - name: Update repos on control plane hosts
   hosts: oo_masters_to_config:oo_etcd_to_config:oo_lb_to_config
@@ -51,6 +54,10 @@
   tags:
   - pre_upgrade
 
+- include: ../../../../common/openshift-cluster/upgrades/disable_excluder.yml
+  tags:
+  - pre_upgrade
+
 - include: ../../../../common/openshift-cluster/initialize_openshift_version.yml
   tags:
   - pre_upgrade
@@ -68,6 +75,10 @@
     skip_docker_role: True
 
 - include: ../../../../common/openshift-cluster/upgrades/pre/verify_control_plane_running.yml
+  tags:
+  - pre_upgrade
+
+- include: ../../../../common/openshift-master/validate_restart.yml
   tags:
   - pre_upgrade
 
@@ -94,5 +105,7 @@
   - include: ../../../../common/openshift-cluster/upgrades/cleanup_unused_images.yml
 
 - include: ../../../../common/openshift-cluster/upgrades/upgrade_control_plane.yml
+  vars:
+    master_config_hook: "v3_4/master_config_upgrade.yml"
 
 - include: ../../../../common/openshift-cluster/upgrades/post_control_plane.yml

@@ -1,3 +1,4 @@
+---
 # This file is included both in the openshift_master role and in the upgrade
 # playbooks.  For that reason the ha_svc variables are use set_fact instead of
 # the vars directory on the role.
@@ -19,14 +20,16 @@
     docker pull {{ openshift.master.master_image }}:{{ openshift_image_tag }}
   register: pull_result
   changed_when: "'Downloaded newer image' in pull_result.stdout"
-  when: openshift.common.is_containerized | bool
+  when: openshift.common.is_containerized | bool and not openshift.common.is_master_system_container | bool
 
 # workaround for missing systemd unit files
 - name: Create the systemd unit files
   template:
     src: "master_docker/master.docker.service.j2"
     dest: "{{ containerized_svc_dir }}/{{ openshift.common.service_type }}-master.service"
-  when: openshift.common.is_containerized | bool and (openshift.master.ha is not defined or not openshift.master.ha | bool)
+  when:
+  - openshift.common.is_containerized | bool and (openshift.master.ha is not defined or not openshift.master.ha) | bool
+  - not openshift.common.is_master_system_container | bool
   register: create_master_unit_file
 
 - command: systemctl daemon-reload
@@ -36,7 +39,9 @@
   template:
     src: "{{ ha_svc_template_path }}/atomic-openshift-master-{{ item }}.service.j2"
     dest: "{{ containerized_svc_dir }}/{{ openshift.common.service_type }}-master-{{ item }}.service"
-  when: openshift.master.ha is defined and openshift.master.ha | bool and openshift_master_cluster_method == "native"
+  when:
+  - openshift.master.ha is defined and openshift.master.ha | bool and openshift_master_cluster_method == "native"
+  - not openshift.common.is_master_system_container | bool
   with_items:
   - api
   - controllers
@@ -131,19 +136,25 @@
     dest: "/etc/systemd/system/{{ openshift.common.service_type }}-master.service"
     src: master_docker/master.docker.service.j2
   register: install_result
-  when: openshift.common.is_containerized | bool and openshift.master.ha is defined and not openshift.master.ha | bool
+  when: openshift.common.is_containerized | bool and openshift.master.ha is defined and not openshift.master.ha | bool and not openshift.common.is_master_system_container | bool
 
 - name: Preserve Master Proxy Config options
   command: grep PROXY /etc/sysconfig/{{ openshift.common.service_type }}-master
-  register: master_proxy
+  register: master_proxy_result
   failed_when: false
   changed_when: false
 
+- set_fact:
+    master_proxy: "{{ master_proxy_result.stdout_lines | default([]) }}"
+
 - name: Preserve Master AWS options
   command: grep AWS_ /etc/sysconfig/{{ openshift.common.service_type }}-master
-  register: master_aws
+  register: master_aws_result
   failed_when: false
   changed_when: false
+
+- set_fact:
+    master_aws: "{{ master_aws_result.stdout_lines | default([]) }}"
 
 - name: Create the master service env file
   template:
@@ -152,17 +163,3 @@
     backup: true
   notify:
   - restart master
-
-- name: Restore Master Proxy Config Options
-  lineinfile:
-    dest: /etc/sysconfig/{{ openshift.common.service_type }}-master
-    line: "{{ item }}"
-  with_items: "{{ master_proxy.stdout_lines | default([]) }}"
-  when: master_proxy.rc == 0 and 'http_proxy' not in openshift.common and 'https_proxy' not in openshift.common
-
-- name: Restore Master AWS Options
-  lineinfile:
-    dest: /etc/sysconfig/{{ openshift.common.service_type }}-master
-    line: "{{ item }}"
-  with_items: "{{ master_aws.stdout_lines | default([]) }}"
-  when: master_aws.rc == 0 and not (openshift_cloudprovider_kind is defined and openshift_cloudprovider_kind == 'aws' and openshift_cloudprovider_aws_access_key is defined and openshift_cloudprovider_aws_secret_key is defined)

@@ -66,30 +66,70 @@ These are plugins used in playbooks and roles:
 └── test                Contains tests.
 ```
 
-### Others
-
-```
-.
-└── git                 Contains some helper scripts for repository maintenance.
-```
-
 ## Building RPMs
 
 See the [RPM build instructions](BUILD.md).
 
 ## Running tests
 
-We use [Nose](http://readthedocs.org/docs/nose/) as a test runner. Make sure it
-is installed along with other test dependencies:
+We use [tox](http://readthedocs.org/docs/tox/) to manage virtualenvs and run
+tests. Alternatively, tests can be run using
+[detox](https://pypi.python.org/pypi/detox/) which allows for running tests in
+parallel
+
 
 ```
-pip install -r utils/test-requirements.txt
+pip install tox detox
 ```
 
-Run the tests with:
+---
+
+Note: before running `tox` or `detox`, ensure that the only virtualenvs within
+the repository root are the ones managed by `tox`, those in a `.tox`
+subdirectory.
+
+Use this command to list paths that are likely part of a virtualenv not managed
+by `tox`:
 
 ```
-nosetests
+$ find . -path '*/bin/python' | grep -vF .tox
+```
+
+Extraneous virtualenvs cause tools such as `pylint` to take a very long time
+going through files that are part of the virtualenv.
+
+---
+
+List the test environments available:
+```
+tox -l
+```
+
+Run all of the tests with:
+```
+tox
+```
+
+Run all of the tests in parallel with detox:
+```
+detox
+```
+
+Running a particular test environment (python 2.7 flake8 tests in this case):
+```
+tox -e py27-flake8
+```
+
+Running a particular test environment in a clean virtualenv (python 3.5 pylint
+tests in this case):
+```
+tox -r -e py35-pylint
+```
+
+If you want to enter the virtualenv created by tox to do additional
+testing/debugging (py27-flake8 env in this case):
+```
+source .tox/py27-flake8/bin/activate
 ```
 
 ## Submitting contributions
@@ -109,3 +149,17 @@ are run on a different Jenkins host that is not publicly accessible, however the
 test results are posted to S3 buckets when complete.
 
 The test output of each job is also posted to the Pull Request as comments.
+
+---
+
+## Appendix
+
+### Finding unused Python code
+
+If you are contributing with Python code, you can use the tool
+[`vulture`](https://pypi.python.org/pypi/vulture) to verify that you are not
+introducing unused code by accident.
+
+This tool is not used in an automated form in CI nor otherwise because it may
+produce both false positives and false negatives. Still, it can be helpful to
+detect dead code that escapes our eyes.

@@ -25,33 +25,15 @@ QUIET_ANSIBLE_CONFIG = '/usr/share/atomic-openshift-utils/ansible-quiet.cfg'
 DEFAULT_PLAYBOOK_DIR = '/usr/share/ansible/openshift-ansible/'
 
 UPGRADE_MAPPINGS = {
-    '3.0': {
-        'minor_version': '3.0',
-        'minor_playbook': 'v3_0_minor/upgrade.yml',
-        'major_version': '3.1',
-        'major_playbook': 'v3_0_to_v3_1/upgrade.yml',
-    },
-    '3.1': {
-        'minor_version': '3.1',
-        'minor_playbook': 'v3_1_minor/upgrade.yml',
-        'major_playbook': 'v3_1_to_v3_2/upgrade.yml',
-        'major_version': '3.2',
-    },
-    '3.2': {
-        'minor_version': '3.2',
-        'minor_playbook': 'v3_2/upgrade.yml',
-        'major_playbook': 'v3_3/upgrade.yml',
-        'major_version': '3.3',
-    },
-    '3.3': {
-        'minor_version': '3.3',
-        'minor_playbook': 'v3_3/upgrade.yml',
-        'major_playbook': 'v3_4/upgrade.yml',
-        'major_version': '3.4',
-    },
     '3.4': {
         'minor_version': '3.4',
         'minor_playbook': 'v3_4/upgrade.yml',
+        'major_playbook': 'v3_5/upgrade.yml',
+        'major_version': '3.5',
+    },
+    '3.5': {
+        'minor_version': '3.5',
+        'minor_playbook': 'v3_5/upgrade.yml',
     },
 }
 
@@ -88,12 +70,6 @@ You might want to override the default subdomain used for exposed routes. If you
 """
     click.echo(message)
     return click.prompt('New default subdomain (ENTER for none)', default='')
-
-
-def list_hosts(hosts):
-    hosts_idx = range(len(hosts))
-    for idx in hosts_idx:
-        click.echo('   {}: {}'.format(idx, hosts[idx]))
 
 
 def collect_hosts(oo_cfg, existing_env=False, masters_set=False, print_summary=True):
@@ -501,7 +477,7 @@ def get_variant_and_version(multi_master=False):
 
     i = 1
     combos = get_variant_version_combos()
-    for (variant, version) in combos:
+    for (variant, _) in combos:
         message = "%s\n(%s) %s" % (message, i, variant.description)
         i = i + 1
     message = "%s\n" % message
@@ -672,20 +648,6 @@ https://docs.openshift.com/enterprise/latest/admin_guide/install/prerequisites.h
         click.clear()
 
     return oo_cfg
-
-
-def get_role_variable(oo_cfg, role_name, variable_name):
-    try:
-        target_role = next(role for role in oo_cfg.deployment.roles if role.name is role_name)
-        target_variable = target_role.variables[variable_name]
-        return target_variable
-    except (StopIteration, KeyError):
-        return None
-
-
-def set_role_variable(oo_cfg, role_name, variable_name, variable_value):
-    target_role = next(role for role in oo_cfg.deployment.roles if role.name is role_name)
-    target_role[variable_name] = variable_value
 
 
 def collect_new_nodes(oo_cfg):
@@ -1124,6 +1086,20 @@ def scaleup(ctx, gen_inventory):
 
     click.echo('Welcome to the OpenShift Enterprise 3 Scaleup utility.')
 
+    # Scaleup requires manual data entry. Therefore, we do not support
+    # unattended operations.
+    if unattended:
+        msg = """
+---
+
+The 'scaleup' operation does not support unattended
+functionality. Re-run the installer without the '-u' or '--unattended'
+option to continue.
+"""
+        click.echo(msg)
+        sys.exit(1)
+
+    # Resume normal scaleup workflow
     print_installation_summary(installed_hosts,
                                oo_cfg.settings['variant_version'],
                                verbose=False,)
