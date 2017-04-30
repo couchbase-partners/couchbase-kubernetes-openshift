@@ -441,7 +441,7 @@ class CouchbaseStatefulSet
         'metadata' => {
           'name' => 'data',
           'annotations' => {
-            'volume.alpha.kubernetes.io/storage-class' => param("STORAGE_CLASS_#{role.upcase}")
+            'volume.beta.kubernetes.io/storage-class' => param("STORAGE_CLASS_#{role.upcase}")
           }
         },
         'spec' => {
