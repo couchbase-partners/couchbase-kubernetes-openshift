@@ -325,7 +325,7 @@ objects:
     - metadata:
         name: data
         annotations:
-          volume.alpha.kubernetes.io/storage-class: "${STORAGE_CLASS_DATA}"
+          volume.beta.kubernetes.io/storage-class: "${STORAGE_CLASS_DATA}"
       spec:
         accessModes:
         - ReadWriteOnce
@@ -480,7 +480,7 @@ objects:
     - metadata:
         name: data
         annotations:
-          volume.alpha.kubernetes.io/storage-class: "${STORAGE_CLASS_INDEX}"
+          volume.beta.kubernetes.io/storage-class: "${STORAGE_CLASS_INDEX}"
       spec:
         accessModes:
         - ReadWriteOnce
@@ -537,7 +537,7 @@ parameters:
 - name: STORAGE_CLASS_DATA
   displayName: Storage Class for data nodes
   description: Storage Class of the volume space for data nodes, e.g. gp2, st1
-  value: gp2
+  value: fast
   required: true
 - name: REPLICAS_INDEX
   displayName: Desired Pod count for index nodes
@@ -556,7 +556,7 @@ parameters:
 - name: STORAGE_CLASS_INDEX
   displayName: Storage Class for index nodes
   description: Storage Class of the volume space for index nodes, e.g. gp2, st1
-  value: gp2
+  value: fast
   required: true
 - name: REPLICAS_QUERY
   displayName: Desired Pod count for query nodes

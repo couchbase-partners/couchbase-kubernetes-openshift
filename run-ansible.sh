@@ -29,6 +29,8 @@ VARS="${VARS} openshift_cloudprovider_aws_access_key=$(echo "${terraform_output}
 VARS="${VARS} openshift_cloudprovider_aws_secret_key=$(echo "${terraform_output}" | jq -r ".iam_secret_key.value")"
 VARS="${VARS} openshift_master_default_subdomain=$(echo "${terraform_output}" | jq -r ".hostname_apps.value")"
 VARS="${VARS} openshift_master_cluster_public_hostname=$(echo "${terraform_output}" | jq -r ".hostname_master.value")"
+VARS="${VARS} openshift_master_htpasswd_users={\"admin\":\"$(echo "${terraform_output}" | jq -r ".admin_password.value" | xargs openssl passwd -apr1 $1 | xargs printf '%s' $1)\"}"
+VARS="${VARS} openshift_master_identity_providers=[{\"mappingMethod\":\"add\",\"name\":\"htpasswd_auth\",\"login\":\"true\",\"challenge\":\"true\",\"kind\":\"HTPasswdPasswordIdentityProvider\",\"filename\":\"/etc/origin/master/htpasswd\"}]"
 
 exec ansible-playbook \
     -i inventory/aws/hosts \

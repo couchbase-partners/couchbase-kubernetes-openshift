@@ -22,7 +22,7 @@ TOKEN=$(oc whoami -t)
 unset KUBECONFIG
 
 # Push into local registry
-REGISTRY_IP=$(kubectl get svc docker-registry -o "jsonpath={.spec.clusterIP}")
+REGISTRY_IP=$(kubectl get svc docker-registry -o "jsonpath={.spec.clusterIP}" -n default)
 # Get from https://openshift.jetstack.net:8443/console/command-line
 docker login -u admin -e tech@jetstack.io -p "${TOKEN}" "${REGISTRY_IP}:5000"
 

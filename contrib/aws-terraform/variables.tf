@@ -91,3 +91,7 @@ variable "dns_zone_id" {
 variable "dns_zone_name" {
   default = "openshift.jetstack.net"
 }
+
+variable "admin_password" {
+  default = "jetpack"
+}

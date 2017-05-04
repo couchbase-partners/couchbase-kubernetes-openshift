@@ -49,3 +49,7 @@ output "hostname_master" {
 output "hostname_apps" {
   value = "${aws_route53_record.apps_root.name}"
 }
+
+output "admin_password" {
+  value = "${var.admin_password}"
+}
