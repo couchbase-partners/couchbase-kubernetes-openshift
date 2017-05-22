@@ -20,10 +20,16 @@ master_ip: terraform_output
 	$(eval MASTER_IP = $(shell echo '$(TERRAFORM_OUTPUT)' | jq -r ".master_ip.value[0]"))
 
 ssh_import_image: master_ip
-	$(SSH) centos@$(MASTER_IP) sudo bash < download_import_image.sh
+	$(SSH) centos@$(MASTER_IP) sudo bash < hack/image_stream.sh
+
+ssh_storage_classes: master_ip
+	$(SSH) centos@$(MASTER_IP) sudo bash < hack/aws_storageclass.sh
 
 generate_templates:
 	ruby templates/couchbase-statefulset-generate.rb
+
+ssh_shell: master_ip
+	$(SSH) centos@$(MASTER_IP)
 
 ssh_dns_patch: master_ip
 	echo "yum install -y bzip2 && curl -sL -o /tmp/openshift.bz2 https://storage.googleapis.com/jetstack-openshift-builds/openshift-1.3.3-dns-unready-patched.bz2 && bunzip2 /tmp/openshift.bz2 && chmod +x /tmp/openshift && mv /tmp/openshift /usr/bin/openshift && systemctl restart origin-master" | $(SSH) centos@$(MASTER_IP) sudo bash
@@ -37,9 +43,9 @@ ssh_templates: master_ip
 
 ssh_project: master_ip
 	#$(SSH) centos@$(MASTER_IP) sudo oc new-project couchbase
-	$(SSH) centos@$(MASTER_IP) sudo oc policy add-role-to-user edit system:serviceaccount:summit-demo:default -n summit-demo
-	$(SSH) centos@$(MASTER_IP) sudo oadm policy add-cluster-role-to-user system:node-reader system:serviceaccount:summit-demo:default
-	$(SSH) centos@$(MASTER_IP) sudo oc policy add-role-to-user admin admin -n summit-demo
+	$(SSH) centos@$(MASTER_IP) sudo oc policy add-role-to-user edit system:serviceaccount:couchbase:default -n couchbase
+	$(SSH) centos@$(MASTER_IP) sudo oadm policy add-cluster-role-to-user system:node-reader system:serviceaccount:couchbase:default
+	$(SSH) centos@$(MASTER_IP) sudo oc policy add-role-to-user admin admin -n couchbase
 
 ansible_update:
 	pass
