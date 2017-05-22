@@ -1,0 +1,20 @@
+# Specify region specifc vars
+aws_availability_zones = ["us-west-1a", "us-west-1b", "us-west-1c"]
+aws_region = "us-west-1"
+
+# This must be taken from https://aws.amazon.com/marketplace/pp/B00O7WM7QW
+# Make sure your account accepts the T&Cs
+aws_ami_id = {
+  centos7-us-west-1 = "ami-xx"
+}
+
+# This must be an existing EC2 keypair
+keypair = "my_keypair"
+
+# This must be an existing R53 public zone
+dns_zone_name = "couchbase-openshift.com"
+dns_zone_id = "XX"
+
+# tags
+cluster_creator = "christian.simon"
+cluster_env = "dev"

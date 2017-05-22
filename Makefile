@@ -5,10 +5,10 @@ verify:
 	true
 
 terraform_plan:
-	cd $(TERRAFORM_DIR) && terraform plan
+	cd $(TERRAFORM_DIR) && touch terraform.tfvars && terraform plan  -var-file=terraform.tfvars
 
 terraform_apply:
-	cd $(TERRAFORM_DIR) && terraform apply
+	cd $(TERRAFORM_DIR) && touch terraform.tfvars && terraform apply -var-file=terraform.tfvars
 
 terraform_output:
 	$(eval TERRAFORM_OUTPUT = $(shell cd $(TERRAFORM_DIR); terraform output -json))

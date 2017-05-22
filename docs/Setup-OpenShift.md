@@ -1,14 +1,13 @@
 ## Setup OpenShift cli
 
 ```
-curl -LO https://github.com/openshift/origin/releases/download/v1.3.0/openshift-origin-client-tools-v1.3.0-3ab7af3d097b57f933eccef684a714f2368804e7-linux-64bit.tar.gz
-tar xvzf openshift-origin-client-tools-v1.3.0-3ab7af3d097b57f933eccef684a714f2368804e7-linux-64bit.tar.gz
-mv openshift-origin-client-tools-v1.3.0-3ab7af3d097b57f933eccef684a714f2368804e7-linux-64bit/oc ~/bin/
+curl -L O openshift-client.tar.gz https://github.com/openshift/origin/releases/download/v1.5.1/openshift-origin-client-tools-v1.5.1-7b451fc-linux-64bit.tar.gz
+tar xvzf openshift-client.tar.gz --strip-components=1 -C ~/bin/
 ```
 
 ## Setup terraform
 
-- Download 0.7.x from https://www.terraform.io/downloads.html
+- Download 0.9.x from https://www.terraform.io/downloads.html
 
 ## Setup python env
 
@@ -26,6 +25,7 @@ Make sure you have configured environemnt variables for your AWS account: http:/
 
 ```
 # check the variables if they suit your needs (see `contrib/aws-terraform/variables.tf`)
+# If not create a new file `contrib/aws-terraform/terraform.tfvars`
 make terraform_apply
 ```
 
