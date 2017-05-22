@@ -132,6 +132,8 @@ class CouchbaseStatefulSet
         }]
       }
     }
+    # Disable antiaffinity by default
+    {}
   end
 
   def config_map

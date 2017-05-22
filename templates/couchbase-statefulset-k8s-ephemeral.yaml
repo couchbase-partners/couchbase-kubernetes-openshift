@@ -54,7 +54,7 @@ items:
           type: query
         annotations:
           pod.alpha.kubernetes.io/initialized: 'true'
-          scheduler.alpha.kubernetes.io/affinity: '{"podAntiAffinity":{"requiredDuringSchedulingIgnoredDuringExecution":[{"labelSelector":{"matchExpressions":[{"key":"app","operator":"In","values":["couchbase"]},{"key":"type","operator":"In","values":["data","index"]},{"key":"name","operator":"In","values":["couchbase"]}]},"topologyKey":"kubernetes.io/hostname"}]}}'
+          scheduler.alpha.kubernetes.io/affinity: "{}"
       spec:
         terminationGracePeriodSeconds: 86400
         containers:
@@ -200,7 +200,7 @@ items:
           type: data
         annotations:
           pod.alpha.kubernetes.io/initialized: 'true'
-          scheduler.alpha.kubernetes.io/affinity: '{"podAntiAffinity":{"requiredDuringSchedulingIgnoredDuringExecution":[{"labelSelector":{"matchExpressions":[{"key":"app","operator":"In","values":["couchbase"]},{"key":"type","operator":"In","values":["data","index"]},{"key":"name","operator":"In","values":["couchbase"]}]},"topologyKey":"kubernetes.io/hostname"}]}}'
+          scheduler.alpha.kubernetes.io/affinity: "{}"
       spec:
         terminationGracePeriodSeconds: 86400
         containers:
@@ -346,7 +346,7 @@ items:
           type: index
         annotations:
           pod.alpha.kubernetes.io/initialized: 'true'
-          scheduler.alpha.kubernetes.io/affinity: '{"podAntiAffinity":{"requiredDuringSchedulingIgnoredDuringExecution":[{"labelSelector":{"matchExpressions":[{"key":"app","operator":"In","values":["couchbase"]},{"key":"type","operator":"In","values":["data","index"]},{"key":"name","operator":"In","values":["couchbase"]}]},"topologyKey":"kubernetes.io/hostname"}]}}'
+          scheduler.alpha.kubernetes.io/affinity: "{}"
       spec:
         terminationGracePeriodSeconds: 86400
         containers:
