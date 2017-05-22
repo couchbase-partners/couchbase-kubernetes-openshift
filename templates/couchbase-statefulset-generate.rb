@@ -576,7 +576,7 @@ class CouchbaseStatefulSet
         'name' => "MEMORY_LIMIT_#{role.upcase}",
         'displayName' => "Memory Limit for #{role} nodes",
         'description' => "Maximum amount of memory #{role} container can use.",
-        'value' => '512Mi'
+        'value' => '1Gi'
       }
 
       next unless (role != 'query') && (storage_type == 'persistent')
@@ -590,8 +590,8 @@ class CouchbaseStatefulSet
       params << {
         'name' => "STORAGE_CLASS_#{role.upcase}",
         'displayName' => "Storage Class for #{role} nodes",
-        'description' => "Storage Class of the volume space for #{role} nodes, e.g. gp2, st1",
-        'value' => 'gp2',
+        'description' => "Storage Class of the volume space for #{role} nodes, e.g. fast, slow",
+        'value' => 'fast',
         'required' => true
       }
     end
