@@ -2,13 +2,13 @@
 
 This project describes the efforts to integrate Couchbase Server Enterprise (>=4.5) into OpenShift Enterprise (>=3.3).
 
-Further details can be found in the project Wiki: 
+Further details can be found in the docs folder: 
 
-* [Wiki](https://github.com/dmaier-couchbase/cb-openshift3/wiki)
+* [Documentation](docs/)
 
 Especially the setup procedure and demo details can be found here:
 
-* [Setup OpenShift](https://github.com/dmaier-couchbase/cb-openshift3/wiki/Setup-OpenShift)
-* [Prepare OpenShift](https://github.com/dmaier-couchbase/cb-openshift3/wiki/Prepare-OpenShift)
-* [Install Templates](https://github.com/dmaier-couchbase/cb-openshift3/wiki/OpenShift-Demos)
-* [Next Steps](https://github.com/dmaier-couchbase/cb-openshift3/wiki/Next-Steps)
+* [Setup OpenShift](docs/Setup-OpenShift.md)
+* [Prepare OpenShift](docs/Prepare-OpenShift.md)
+* [Install Templates](docs/OpenShift-Demos.md)
+* [Next Steps](docs/Next-Steps.md)
