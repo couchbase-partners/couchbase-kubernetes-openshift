@@ -22,6 +22,7 @@ fi
 
 VARS="cluster_id=jetstack"
 VARS="${VARS} cluster_env=dev"
+VARS="${VARS} openshift_version=1.5.0"
 VARS="${VARS} deployment_type=${deployment_type}"
 VARS="${VARS} openshift_cloudprovider_kind=aws"
 VARS="${VARS} openshift_cloudprovider_aws_access_key=$(echo "${terraform_output}" | jq -r ".iam_access_key.value")"
