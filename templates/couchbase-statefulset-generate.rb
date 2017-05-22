@@ -640,7 +640,7 @@ class CouchbaseStatefulSet
       },
       {
         'name' => 'IMAGE_NAME',
-        'value' => 'couchbase-noroot:4.5.1-enterprise',
+        'value' => 'couchbase-rhel-4.5:latest',
         'required' => true
       },
       {
