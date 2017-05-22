@@ -42,7 +42,7 @@ ssh_templates: master_ip
 	cat templates/cbc-pillowfight-template.yaml | sed "s/###REGISTRY_IP###/$(REGISTRY_IP)/g" | $(SSH) centos@$(MASTER_IP) sudo oc apply --namespace=openshift -f -
 
 ssh_project: master_ip
-	#$(SSH) centos@$(MASTER_IP) sudo oc new-project couchbase
+	$(SSH) centos@$(MASTER_IP) sudo oc new-project couchbase || true
 	$(SSH) centos@$(MASTER_IP) sudo oc policy add-role-to-user edit system:serviceaccount:couchbase:default -n couchbase
 	$(SSH) centos@$(MASTER_IP) sudo oadm policy add-cluster-role-to-user system:node-reader system:serviceaccount:couchbase:default
 	$(SSH) centos@$(MASTER_IP) sudo oc policy add-role-to-user admin admin -n couchbase
